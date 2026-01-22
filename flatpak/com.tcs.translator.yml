@@ -1,0 +1,46 @@
+app-id: com.tcs.translator
+runtime: org.gnome.Platform
+runtime-version: "48"
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22
+command: translator
+
+finish-args:
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --share=ipc
+  - --share=network
+  - --filesystem=home
+
+modules:
+  - name: translator-local
+    buildsystem: simple
+    build-options:
+      append-path: /usr/lib/sdk/node22/bin:/usr/lib/sdk/rust-stable/bin
+    build-commands:
+      - install -Dm755 src-tauri/target/release/translator /app/bin/translator
+      - install -Dm644 com.tcs.translator.desktop /app/share/applications/com.tcs.translator.desktop
+      - install -Dm644 com.tcs.translator.metainfo.xml /app/share/metainfo/com.tcs.translator.metainfo.xml
+      - |
+        for size in 128x128 256x256; do
+          install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/$size/apps/com.tcs.translator.png
+        done
+      - install -Dm644 src-tauri/icons/icon.png /app/share/icons/hicolor/scalable/apps/com.tcs.translator.svg
+
+    sources:
+      - type: file
+        path: "com.tcs.translator.desktop"
+      - type: file
+        path: "com.tcs.translator.metainfo.xml"
+      - type: dir
+        path: "../src-tauri/icons"
+        dest: "src-tauri/icons"
+      - type: dir
+        path: "../src-tauri/target/release"
+        dest: "src-tauri/target/release"
+
+    cleanup:
+      - /share/man
