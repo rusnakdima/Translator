@@ -15,10 +15,13 @@
     <p>Translator is a desktop application for translating text between multiple languages.</p>
     <p>Features include:</p>
     <ul>
-      <li>Support for 15 languages</li>
-      <li>Real-time translation as you type</li>
-      <li>Dark/Light theme</li>
-      <li>Cross-platform support</li>
+      <li>Support for 15 languages (English, Spanish, French, German, Italian, Portuguese, Russian, Japanese, Korean, Chinese, Arabic, Hindi, Dutch, Polish, Turkish)</li>
+      <li>Real-time translation as you type with debounced auto-translate</li>
+      <li>Dark/Light theme support</li>
+      <li>Copy translation to clipboard</li>
+      <li>Swap source and target languages</li>
+      <li>Character counter (max 5000 characters)</li>
+      <li>Non-blocking async translation via events</li>
     </ul>
   </description>
 
@@ -42,20 +45,19 @@
   </provides>
 
   <releases>
-    <release version="0.0.0" date="2026-01-22">
-      <description>
-        <p>Release version 0.0.0</p>
-      </description>
-    </release>
     <release version="0.1.0" date="2026-01-22">
       <description>
-        <p>Initial release of Translator application.</p>
+        <p>First stable release of Translator application.</p>
         <p>Features:</p>
         <ul>
-          <li>Translation between 15 languages</li>
-          <li>Real-time translation</li>
-          <li>Dark/Light theme</li>
-          <li>Cross-platform Tauri desktop app</li>
+          <li>Translation between 15 languages using trans command</li>
+          <li>Real-time translation with 500ms debounce</li>
+          <li>Dark/Light theme toggle</li>
+          <li>Copy translation to clipboard</li>
+          <li>Swap source and target languages</li>
+          <li>Character counter (5000 max)</li>
+          <li>Non-blocking async event-based translation</li>
+          <li>Flatpak and native Linux packages (DEB, RPM, AppImage)</li>
         </ul>
       </description>
     </release>
