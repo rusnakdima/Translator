@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-slate-50: #f8fafc;
+  --color-slate-100: #f1f5f9;
+  --color-slate-200: #e2e8f0;
+  --color-slate-300: #cbd5e1;
+  --color-slate-400: #94a3b8;
+  --color-slate-500: #64748b;
+  --color-slate-600: #475569;
+  --color-slate-700: #334155;
+  --color-slate-800: #1e293b;
+  --color-slate-900: #0f172a;
+  --color-slate-950: #020617;
+}
+
+:host {
+  display: block;
+}
+
+html {
+  @apply h-full overflow-x-hidden;
+}
+
+html.dark {
+  @apply bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900;
+}
+
+html:not(.dark) {
+  @apply bg-gradient-to-br from-indigo-100 via-slate-50 to-indigo-100;
+}
+
+body {
+  @apply h-full m-0 p-0;
+}
+
+select {
+  @apply cursor-pointer;
+}
+
+select option {
+  @apply p-2;
+}
+
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-700 dark:bg-slate-700 bg-slate-200;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply rounded-full bg-slate-600 dark:bg-slate-600 bg-slate-300;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-500 dark:bg-slate-500 bg-slate-400;
+}
+
+::selection {
+  @apply bg-indigo-500 text-white;
+}

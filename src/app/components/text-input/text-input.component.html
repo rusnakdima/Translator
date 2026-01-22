@@ -1,0 +1,13 @@
+<textarea
+  [ngModel]="text()"
+  (ngModelChange)="text.set($event); onTextChange()"
+  (keydown)="keyDown.emit($event)"
+  class="min-h-[200px] w-full resize-none rounded-xl border p-4 focus:outline-none dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-100 dark:placeholder-slate-400 dark:focus:border-indigo-500 border-slate-300 bg-slate-100 text-slate-800 placeholder-slate-500 focus:border-indigo-500"
+  [id]="inputId()"
+  [placeholder]="placeholder()"
+></textarea>
+<div
+  class="mt-2 flex items-center justify-between text-xs dark:text-slate-400 text-slate-500"
+>
+  <span>{{ charCount() }}</span>
+</div>
