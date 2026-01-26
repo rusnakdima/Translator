@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) [TechCraft Solutions] Year [2024] Autor [Dmitriy303]
+Copyright (c) [TechCraft Solutions] Year [2026] Autor [Dmitriy303]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
