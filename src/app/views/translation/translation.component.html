@@ -41,6 +41,7 @@
             (textChange)="onInputTextChange($event)"
             [charCount]="charCount()"
             (keyDown)="handleKeyDown($event)"
+            (clear)="onClearInput()"
           />
         </div>
 
@@ -68,7 +69,7 @@
             [outputId]="'outputText'"
             [placeholder]="'Translation will appear here as you type...'"
             [translatedText]="translatedText()"
-            (copy)="copyToClipboard()"
+            (copyClick)="copyToClipboard()"
           />
         </div>
       </div>

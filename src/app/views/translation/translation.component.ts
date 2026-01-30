@@ -70,6 +70,13 @@ export class TranslationComponent implements OnInit {
     this.onInputChange();
   }
 
+  onClearInput(): void {
+    this.inputText.set("");
+    this.translatedText.set("");
+    this.error.set(null);
+    this.cancelPending();
+  }
+
   constructor() {
     effect(() => {
       const count = this.inputText().length;
@@ -211,9 +218,13 @@ export class TranslationComponent implements OnInit {
   }
 
   swapLanguages(): void {
-    const temp = this.sourceLang();
+    const tempLang = this.sourceLang();
     this.sourceLang.set(this.targetLang());
-    this.targetLang.set(temp);
+    this.targetLang.set(tempLang);
+
+    const tempText = this.inputText();
+    this.inputText.set(this.translatedText());
+    this.translatedText.set(tempText);
 
     const text = this.inputText().trim();
     if (text) {
