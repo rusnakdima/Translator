@@ -30,7 +30,10 @@ async fn translate_text(
   window: Window,
 ) -> Result<usize, String> {
   let request_id = REQUEST_ID.fetch_add(1, Ordering::SeqCst);
-  println!("[Rust] Translation request {}: {} -> {}", request_id, source_lang, target_lang);
+  println!(
+    "[Rust] Translation request {}: {} -> {}",
+    request_id, source_lang, target_lang
+  );
 
   let translator = Translator::new();
   let text_clone = text.clone();
