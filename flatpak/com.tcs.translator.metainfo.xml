@@ -19,7 +19,8 @@
       <li>Real-time translation as you type with debounced auto-translate</li>
       <li>Dark/Light theme support</li>
       <li>Copy translation to clipboard</li>
-      <li>Swap source and target languages</li>
+      <li>Clear input text with one click</li>
+      <li>Swap source and target languages with text exchange</li>
       <li>Character counter (max 5000 characters)</li>
       <li>Non-blocking async translation via events</li>
     </ul>
@@ -45,6 +46,21 @@
   </provides>
 
   <releases>
+    <release version="0.2.0" date="2026-01-30">
+      <description>
+        <p>Version 0.2.0 introduces user experience improvements and new convenience features.</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Add Clear button to quickly clear input text and reset the translation</li>
+          <li>Improved language swap: now exchanges text content between input and output when swapping languages, making reverse translations easier</li>
+        </ul>
+        <p>Improvements:</p>
+        <ul>
+          <li>Added ESLint configuration for better code quality</li>
+          <li>Applied consistent code formatting across the codebase</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-01-22">
       <description>
         <p>First stable release of Translator application.</p>
