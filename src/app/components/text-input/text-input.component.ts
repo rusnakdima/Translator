@@ -15,8 +15,15 @@ export class TextInputComponent {
   charCount = input.required<string>();
   keyDown = output<KeyboardEvent>();
   textChange = output<string>();
+  clear = output<void>();
 
   onTextChange(): void {
     this.textChange.emit(this.text());
+  }
+
+  onClear(): void {
+    this.text.set("");
+    this.textChange.emit("");
+    this.clear.emit();
   }
 }
