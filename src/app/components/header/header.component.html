@@ -9,5 +9,5 @@
       {{ subtitle() }}
     </p>
   </div>
-  <app-theme-toggle [isDark]="isDark()" (toggle)="toggleTheme.emit()" />
+  <app-theme-toggle [isDark]="isDark()" (toggleChange)="toggleTheme.emit()" />
 </header>

@@ -12,5 +12,5 @@ export class TranslationOutputComponent {
   outputId = input.required<string>();
   placeholder = input.required<string>();
   translatedText = input.required<string>();
-  copy = output<void>();
+  copyClick = output<void>();
 }

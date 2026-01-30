@@ -10,5 +10,5 @@ import { CommonModule } from "@angular/common";
 })
 export class ThemeToggleComponent {
   isDark = input.required<boolean>();
-  toggle = output<void>();
+  toggleChange = output<void>();
 }
