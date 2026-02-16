@@ -2,11 +2,13 @@
 
 A modern cross-platform desktop translation application built with **Tauri** and **Angular**. Translate text between 15 languages instantly with a clean, responsive interface powered by `translate-shell`.
 
-![Translator App](https://via.placeholder.com/800x400?text=Translator+App+Screenshot)
+## Screenshots
 
-## Overview
-
-Translator is a lightweight, fast, and secure desktop application that leverages the power of Rust (via Tauri) and the flexibility of Angular to provide a seamless translation experience. It uses the `trans` command-line utility from `translate-shell` as its backend engine, ensuring reliable and accurate translations across multiple providers.
+<details>
+  <summary>Spoiler</summary>
+  <h3>Main page</h3>
+  <img src="imgREADME/main.png" alt="Main Page">
+</details>
 
 ## Features
 
@@ -20,50 +22,88 @@ Translator is a lightweight, fast, and secure desktop application that leverages
 
 ## Tech Stack
 
-- **Frontend**: [Angular 20](https://angular.io/) with [TailwindCSS 4](https://tailwindcss.com/)
-- **Backend**: [Tauri 2](https://tauri.app/) (Rust)
+- **Frontend**: [Angular v21](https://angular.io/) (Standalone Components, Signals)
+- **Backend**: [Tauri v2](https://tauri.app/) (Rust)
 - **Engine**: [translate-shell](https://github.com/soimort/translate-shell) (`trans` CLI)
+- **Styling**: TailwindCSS v4
 - **Package Manager**: [Bun](https://bun.sh/)
 
-## Prerequisites
+## Installation
 
-To build or run this application from source, you need:
+#### Checking the installed tools to launch the project
 
-1.  **Node.js** (v18+) & **Bun**
-2.  **Rust** toolchain
-3.  **translate-shell** installed and accessible in your system PATH as `trans`.
+First make sure you have Node.js installed.
+To do this, open a command prompt or terminal and type the following commands:
 
-### Installing translate-shell
+```bash
+node -v
+```
+
+```bash
+npm -v
+```
+
+If you are using the bun package manager, then run this command:
+
+```bash
+bun -v
+```
+
+#### Installation dependencies
+
+After that, go to the folder with this project and run the following command:
+
+```bash
+npm install
+```
+
+If you are using the bun package manager, then run this command:
+
+```bash
+bun install
+```
+
+#### Checking the Rust compiler
+
+In order to run a Rust application, you need to make sure that you have a compiler for Rust.
+To find out if you have one, enter the following command:
+
+```bash
+rustc --version
+```
+
+If you get an error instead of a version, it means that you don't have a Rust compiler. In order to set it up, go to the [official website](https://www.rust-lang.org/tools/install) and follow the instructions on the website.
+
+#### Installing translate-shell
 
 - **Ubuntu/Debian**: `sudo apt-get install translate-shell`
 - **macOS**: `brew install translate-shell`
 - **Arch Linux**: `sudo pacman -S translate-shell`
 
-## Getting Started
+## Usage
 
-### Installation
+After installing the dependencies, use the following command to run, depending on the package manager you are using:
 
 ```bash
-# Install frontend and development dependencies
-bun install
-
-# Install Tauri CLI globally (optional but recommended)
-cargo install tauri-cli
+npm run tauri dev
 ```
 
-### Development
+Or
 
 ```bash
-# Run in development mode (with hot-reload)
-bun run tauri:dev
+bun run tauri dev
 ```
 
-### Build
+## Build Optimization
 
-We provide a specialized build script for optimized production releases:
+This project includes optimizations to reduce build times and ensure high performance:
+
+### Build Scripts
+
+Use the optimized build scripts that only rebuild components when source files have changed:
 
 ```bash
-# Build for Desktop (Linux/Windows/macOS)
+# Build desktop application (only rebuilds if files changed)
 bun run build:smart
 
 # Build for Android
@@ -73,50 +113,21 @@ bun run build:smart:android
 bun run build:clean
 ```
 
-## How It Works
+### Key Optimizations
 
-1.  **Frontend**: The Angular application captures user input and sends it to the Rust backend using Tauri's `invoke` system.
-2.  **Backend**: The Rust service receives the text and spawns an asynchronous task to execute the `trans` command.
-3.  **Communication**: Once `translate-shell` provides the output, the Rust backend emits a `translation-result` event back to the frontend.
-4.  **UI Update**: The Angular component listens for these events and updates the display accordingly, handling request IDs to ensure results are matched to the correct query.
+1. **Incremental Compilation**: Rust code uses incremental compilation to avoid recompiling unchanged code.
+2. **Smart Frontend Building**: Frontend is only rebuilt when source files change.
+3. **Modern Frontend Features**: Utilizes Angular v21 Signals and Control Flow for optimized change detection and performance.
+4. **Rust Backend Performance**: Spawns asynchronous tasks to execute the `trans` command, ensuring the UI remains responsive during translations.
 
-## Project Structure
+## Authors
 
-```text
-.
-├── src/                    # Angular Frontend
-│   ├── app/
-│   │   ├── components/     # UI Building Blocks (Buttons, Input, etc.)
-│   │   ├── services/       # Translation and State Logic
-│   │   ├── views/          # Main Page Layouts
-│   │   └── models/         # TypeScript Interfaces
-│   └── styles.css          # Global TailwindCSS Imports
-├── src-tauri/              # Rust Backend
-│   ├── src/
-│   │   ├── helpers/        # Command Execution Helpers
-│   │   ├── services/       # Translation Logic and State Management
-│   │   └── lib.rs          # Tauri Command Definitions
-│   └── tauri.conf.json     # Tauri Configuration
-├── scripts/                # Utility and Build Optimization Scripts
-└── flatpak/                # Manifests for Flatpak Distribution
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+- [Dmitriy303](https://github.com/rusnakdima)
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE.MD).
 
-## Acknowledgments
+## Contact
 
-- Thanks to the [translate-shell](https://github.com/soimort/translate-shell) project for the amazing CLI tool.
-- [Tauri](https://tauri.app/) for making desktop apps with Rust easy.
-
+If you have any questions or comments about this project, please feel free to contact us at [rusnakdima03@gmail.com](mailto:rusnakdima03@gmail.com).
