@@ -1,6 +1,5 @@
 /* sys lib */
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
 
 /* components */
 import { ThemeToggleComponent } from "@components/theme-toggle/theme-toggle.component";
@@ -8,7 +7,7 @@ import { ThemeToggleComponent } from "@components/theme-toggle/theme-toggle.comp
 @Component({
   selector: "app-header",
   standalone: true,
-  imports: [CommonModule, ThemeToggleComponent],
+  imports: [ThemeToggleComponent],
   templateUrl: "./header.component.html",
 })
 export class HeaderComponent {

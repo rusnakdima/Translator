@@ -1,11 +1,13 @@
 /* sys lib */
 import { Component, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
+/* components */
+import { AppIconComponent } from "@components/icons/app-icon.component";
 
 @Component({
   selector: "app-loading-spinner",
   standalone: true,
-  imports: [CommonModule],
+  imports: [AppIconComponent],
   templateUrl: "./loading-spinner.component.html",
 })
 export class LoadingSpinnerComponent {

@@ -1,11 +1,13 @@
 /* sys lib */
 import { Component, input, output, model } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { AutoResizeDirective } from "@directives/auto-resize.directive";
+import { AppIconComponent } from "@components/icons/app-icon.component";
 
 @Component({
   selector: "app-text-input",
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AutoResizeDirective, AppIconComponent],
   templateUrl: "./text-input.component.html",
 })
 export class TextInputComponent {

@@ -1,15 +1,17 @@
 /* sys lib */
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 
 /* models */
 import { Language } from "@models/translation.model";
 
+/* components */
+import { AppIconComponent } from "@components/icons/app-icon.component";
+
 @Component({
   selector: "app-language-selector",
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule, AppIconComponent],
   templateUrl: "./language-selector.component.html",
 })
 export class LanguageSelectorComponent {

@@ -1,6 +1,5 @@
 /* sys lib */
 import { Component, OnInit, inject, signal, effect } from "@angular/core";
-import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { listen } from "@tauri-apps/api/event";
 
@@ -13,6 +12,13 @@ import { Language, TranslationResponse } from "@models/translation.model";
 /* helpers */
 import { ToastHelper } from "@helpers/toast.helper";
 
+/* constants */
+import {
+  RESPONSE_STATUS,
+  TAURI_EVENTS,
+  ToastKind,
+} from "@constants/app.constants";
+
 /* components */
 import { HeaderComponent } from "@components/header/header.component";
 import { LanguageSelectorComponent } from "@components/language-selector/language-selector.component";
@@ -20,6 +26,7 @@ import { TextInputComponent } from "@components/text-input/text-input.component"
 import { TranslationOutputComponent } from "@components/translation-output/translation-output.component";
 import { SwapButtonComponent } from "@components/swap-button/swap-button.component";
 import { LoadingSpinnerComponent } from "@components/loading-spinner/loading-spinner.component";
+import { AppIconComponent } from "@components/icons/app-icon.component";
 
 interface TranslationResultEvent {
   requestId: number;
@@ -37,7 +44,6 @@ interface TranslationResultEvent {
   selector: "app-translation",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     HeaderComponent,
     LanguageSelectorComponent,
@@ -45,6 +51,7 @@ interface TranslationResultEvent {
     TranslationOutputComponent,
     SwapButtonComponent,
     LoadingSpinnerComponent,
+    AppIconComponent,
   ],
   templateUrl: "./translation.component.html",
 })
@@ -75,6 +82,7 @@ export class TranslationComponent implements OnInit {
     this.translatedText.set("");
     this.error.set(null);
     this.cancelPending();
+    ToastHelper.show("Text cleared", ToastKind.Info);
   }
 
   constructor() {
@@ -98,42 +106,51 @@ export class TranslationComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    ToastHelper.initialize();
     await this.loadLanguages();
     await this.setupEventListener();
   }
 
   private async setupEventListener(): Promise<void> {
-    await listen<TranslationResultEvent>("translation-result", (event) => {
-      const { requestId, response } = event.payload;
+    await listen<TranslationResultEvent>(
+      TAURI_EVENTS.translationResult,
+      (event) => {
+        const { requestId, response } = event.payload;
 
-      if (
-        this.currentRequestId === null ||
-        requestId !== this.currentRequestId
-      ) {
-        return;
-      }
-
-      this.isLoading.set(false);
-      this.currentRequestId = null;
-
-      if (response.status === "error") {
-        this.error.set(response.message);
-      } else {
-        this.error.set(null);
-        if (response.data && response.data.translatedText) {
-          this.translatedText.set(response.data.translatedText);
+        if (
+          this.currentRequestId === null ||
+          requestId !== this.currentRequestId
+        ) {
+          return;
         }
-      }
-    });
+
+        this.isLoading.set(false);
+        this.currentRequestId = null;
+
+        if (response.status === RESPONSE_STATUS.error) {
+          this.error.set(response.message);
+          ToastHelper.show(response.message, ToastKind.Error);
+        } else {
+          this.error.set(null);
+          if (response.data?.translatedText) {
+            this.translatedText.set(response.data.translatedText);
+            ToastHelper.show("Text translated", ToastKind.Success);
+          }
+        }
+      },
+    );
   }
 
   async loadLanguages(): Promise<void> {
-    const languages = await this.translationService.getSupportedLanguages();
-    this.languages.set(languages);
+    try {
+      const languages = await this.translationService.getSupportedLanguages();
+      this.languages.set(languages);
 
-    if (languages.length > 0) {
-      this.sourceLang.set(languages[0].code);
+      if (languages.length > 0) {
+        this.sourceLang.set(languages[0].code);
+      }
+    } catch {
+      this.languages.set([]);
+      ToastHelper.show("Failed to load languages", ToastKind.Error);
     }
   }
 
@@ -183,22 +200,17 @@ export class TranslationComponent implements OnInit {
   }
 
   onSourceLangChange(lang: string): void {
-    this.cancelPending();
     this.sourceLang.set(lang);
-
-    const text = this.inputText().trim();
-    if (!text) {
-      return;
-    }
-
-    this.debounceTimer = setTimeout(() => {
-      this.triggerTranslation();
-    }, 500);
+    this.scheduleTranslationAfterLangChange();
   }
 
   onTargetLangChange(lang: string): void {
-    this.cancelPending();
     this.targetLang.set(lang);
+    this.scheduleTranslationAfterLangChange();
+  }
+
+  private scheduleTranslationAfterLangChange(): void {
+    this.cancelPending();
 
     const text = this.inputText().trim();
     if (!text) {
@@ -238,14 +250,16 @@ export class TranslationComponent implements OnInit {
   async copyToClipboard(): Promise<void> {
     const text = this.translatedText();
     if (!text) {
-      ToastHelper.show("Nothing to copy");
-      return Promise.resolve();
+      ToastHelper.show("Nothing to copy", ToastKind.Info);
+      return;
     }
 
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => ToastHelper.show("Copied to clipboard!"))
-      .catch(() => ToastHelper.show("Failed to copy"));
+    try {
+      await navigator.clipboard.writeText(text);
+      ToastHelper.show("Copied to clipboard!", ToastKind.Success);
+    } catch {
+      ToastHelper.show("Failed to copy", ToastKind.Error);
+    }
   }
 
   handleKeyDown(event: KeyboardEvent): void {

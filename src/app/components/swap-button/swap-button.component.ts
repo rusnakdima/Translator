@@ -1,11 +1,13 @@
 /* sys lib */
 import { Component, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
+/* components */
+import { AppIconComponent } from "@components/icons/app-icon.component";
 
 @Component({
   selector: "app-swap-button",
   standalone: true,
-  imports: [CommonModule],
+  imports: [AppIconComponent],
   templateUrl: "./swap-button.component.html",
 })
 export class SwapButtonComponent {

@@ -1,11 +1,13 @@
 /* sys lib */
 import { Component, input, output } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { AutoResizeDirective } from "@directives/auto-resize.directive";
+import { AppIconComponent } from "@components/icons/app-icon.component";
 
 @Component({
   selector: "app-translation-output",
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AutoResizeDirective, AppIconComponent],
   templateUrl: "./translation-output.component.html",
 })
 export class TranslationOutputComponent {
