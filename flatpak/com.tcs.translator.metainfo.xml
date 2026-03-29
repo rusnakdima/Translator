@@ -21,6 +21,7 @@
       <li>Copy translation to clipboard</li>
       <li>Clear input text with one click</li>
       <li>Swap source and target languages with text exchange</li>
+      <li>Text input that grows with your content</li>
       <li>Character counter (max 5000 characters)</li>
       <li>Non-blocking async translation via events</li>
     </ul>
@@ -46,6 +47,23 @@
   </provides>
 
   <releases>
+    <release version="0.3.0" date="2026-03-29">
+      <description>
+        <p>Version 0.3.0 improves the input experience, tightens UI consistency, and streamlines maintenance tooling.</p>
+        <p>New and improved:</p>
+        <ul>
+          <li>Text input auto-resizes as you type for a more comfortable editing area</li>
+          <li>Toolbar and control icons use a single shared inline SVG set for consistent look in light and dark themes</li>
+          <li>Toasts use distinct info, success, and error styles for clearer feedback</li>
+        </ul>
+        <p>Maintenance:</p>
+        <ul>
+          <li>Prettier for the Angular frontend and rustfmt for the Rust backend keep formatting uniform</li>
+          <li>README and project docs refreshed</li>
+          <li>Dependency updates (including Cargo.lock)</li>
+        </ul>
+      </description>
+    </release>
     <release version="0.2.0" date="2026-01-30">
       <description>
         <p>Version 0.2.0 introduces user experience improvements and new convenience features.</p>
