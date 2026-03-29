@@ -2,16 +2,12 @@ use crate::helpers::translator_helper::Translator;
 use crate::models::response_model::Response;
 use crate::models::translation_model::{Language, LanguagesResponse, TranslationResponse};
 
+#[derive(Clone, Default)]
 pub struct TranslationService {
   translator: Translator,
 }
 
 impl TranslationService {
-  pub fn new() -> Self {
-    let translator = Translator::new();
-    TranslationService { translator }
-  }
-
   pub fn get_supported_languages(&self) -> Response<LanguagesResponse> {
     let languages: Vec<Language> = Translator::get_supported_languages()
       .into_iter()
@@ -46,11 +42,5 @@ impl TranslationService {
       target_lang: target_lang.to_string(),
     };
     Response::success("Translation completed successfully".to_string(), data)
-  }
-}
-
-impl Default for TranslationService {
-  fn default() -> Self {
-    Self::new()
   }
 }

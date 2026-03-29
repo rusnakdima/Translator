@@ -1,6 +1,7 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+#[derive(Clone, Copy, Default)]
 pub struct Translator;
 
 const SUPPORTED_LANGUAGES: &[(&str, &str)] = &[
@@ -21,11 +22,15 @@ const SUPPORTED_LANGUAGES: &[(&str, &str)] = &[
   ("tr", "Turkish"),
 ];
 
-impl Translator {
-  pub fn new() -> Self {
-    Translator
+fn validate_language_code(code: &str, label: &str) -> Result<(), String> {
+  let supported_codes: Vec<&str> = SUPPORTED_LANGUAGES.iter().map(|&(c, _)| c).collect();
+  if !supported_codes.contains(&code) {
+    return Err(format!("Unsupported {} language: {}", label, code));
   }
+  Ok(())
+}
 
+impl Translator {
   pub fn get_supported_languages() -> Vec<(String, String)> {
     SUPPORTED_LANGUAGES
       .iter()
@@ -47,15 +52,8 @@ impl Translator {
       return Ok(text.to_string());
     }
 
-    let supported_codes: Vec<&str> = SUPPORTED_LANGUAGES.iter().map(|&(code, _)| code).collect();
-
-    if !supported_codes.contains(&source_lang) {
-      return Err(format!("Unsupported source language: {}", source_lang));
-    }
-
-    if !supported_codes.contains(&target_lang) {
-      return Err(format!("Unsupported target language: {}", target_lang));
-    }
+    validate_language_code(source_lang, "source")?;
+    validate_language_code(target_lang, "target")?;
 
     let mut child = Command::new("trans")
       .args(&["-b", "-s", source_lang, "-t", target_lang])
@@ -65,11 +63,12 @@ impl Translator {
       .spawn()
       .map_err(|e| format!("Failed to execute translation command: {}", e))?;
 
-    let stdin = child.stdin.as_mut().ok_or("Failed to get stdin")?;
-    stdin
-      .write_all(text.as_bytes())
-      .map_err(|e| format!("Failed to write to stdin: {}", e))?;
-    drop(stdin);
+    {
+      let stdin = child.stdin.as_mut().ok_or("Failed to get stdin")?;
+      stdin
+        .write_all(text.as_bytes())
+        .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+    }
 
     let output = child
       .wait_with_output()
@@ -87,11 +86,5 @@ impl Translator {
     }
 
     Ok(translated)
-  }
-}
-
-impl Default for Translator {
-  fn default() -> Self {
-    Self::new()
   }
 }
