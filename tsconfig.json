@@ -15,10 +15,12 @@
     "baseUrl": "./",
     "paths": {
       "@components/*": ["src/app/components/*"],
+      "@directives/*": ["src/app/directives/*"],
       "@views/*": ["src/app/views/*"],
       "@models/*": ["src/app/models/*"],
       "@services/*": ["src/app/services/*"],
-      "@helpers/*": ["src/app/helpers/*"]
+      "@helpers/*": ["src/app/helpers/*"],
+      "@constants/*": ["src/app/constants/*"]
     }
   },
   "angularCompilerOptions": {
