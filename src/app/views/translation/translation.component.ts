@@ -1,5 +1,13 @@
 /* sys lib */
-import { Component, OnInit, inject, signal, effect } from "@angular/core";
+import {
+  Component,
+  OnInit,
+  inject,
+  signal,
+  effect,
+  HostListener,
+  ViewChild,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { listen } from "@tauri-apps/api/event";
 
@@ -27,6 +35,7 @@ import { TranslationOutputComponent } from "@components/translation-output/trans
 import { SwapButtonComponent } from "@components/swap-button/swap-button.component";
 import { LoadingSpinnerComponent } from "@components/loading-spinner/loading-spinner.component";
 import { AppIconComponent } from "@components/icons/app-icon.component";
+import { ShortcutsOverlayComponent } from "@components/shortcuts-overlay/shortcuts-overlay.component";
 
 interface TranslationResultEvent {
   requestId: number;
@@ -52,6 +61,7 @@ interface TranslationResultEvent {
     SwapButtonComponent,
     LoadingSpinnerComponent,
     AppIconComponent,
+    ShortcutsOverlayComponent,
   ],
   templateUrl: "./translation.component.html",
 })
@@ -64,6 +74,131 @@ export class TranslationComponent implements OnInit {
   readonly isLoading = signal(false);
   readonly error = signal<string | null>(null);
   readonly isDark = signal<boolean>(true);
+  readonly showShortcuts = signal(false);
+
+  @ViewChild("textInput") textInput!: TextInputComponent;
+  @ViewChild("sourceLangSelector")
+  sourceLangSelector!: LanguageSelectorComponent;
+  @ViewChild("targetLangSelector")
+  targetLangSelector!: LanguageSelectorComponent;
+
+  @HostListener("window:keydown", ["$event"])
+  handleGlobalKeyDown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === "/") {
+      event.preventDefault();
+      this.showShortcuts.update((v) => !v);
+      return;
+    }
+
+    if (event.key === "Escape" && this.showShortcuts()) {
+      this.showShortcuts.set(false);
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      event.preventDefault();
+      this.cancelPending();
+      this.triggerTranslation();
+      return;
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "l") {
+      event.preventDefault();
+      this.swapLanguages();
+      return;
+    }
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key === "V"
+    ) {
+      event.preventDefault();
+      this.quickPaste();
+      return;
+    }
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key === "C"
+    ) {
+      event.preventDefault();
+      this.quickCopy();
+      return;
+    }
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key === "S"
+    ) {
+      event.preventDefault();
+      this.focusSource();
+      return;
+    }
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key === "L"
+    ) {
+      event.preventDefault();
+      this.focusSourceLang();
+      return;
+    }
+
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      event.shiftKey &&
+      event.key === ";"
+    ) {
+      event.preventDefault();
+      this.focusTargetLang();
+      return;
+    }
+  }
+
+  toggleShortcuts(): void {
+    this.showShortcuts.update((v) => !v);
+  }
+
+  async quickPaste(): Promise<void> {
+    try {
+      const text = await navigator.clipboard.readText();
+      this.inputText.set(text);
+      ToastHelper.show("Pasted from clipboard", ToastKind.Success);
+      this.onInputChange();
+    } catch {
+      ToastHelper.show("Failed to paste", ToastKind.Error);
+    }
+  }
+
+  async quickCopy(): Promise<void> {
+    const text = this.translatedText();
+    if (!text) {
+      ToastHelper.show("Nothing to copy", ToastKind.Info);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      ToastHelper.show("Copied to clipboard!", ToastKind.Success);
+    } catch {
+      ToastHelper.show("Failed to copy", ToastKind.Error);
+    }
+  }
+
+  focusSource(): void {
+    this.textInput?.focus();
+  }
+
+  focusSourceLang(): void {
+    this.sourceLangSelector?.focus();
+  }
+
+  focusTargetLang(): void {
+    this.targetLangSelector?.focus();
+  }
 
   sourceLang = signal<string>("");
   targetLang = signal<string>("es");
@@ -262,11 +397,5 @@ export class TranslationComponent implements OnInit {
     }
   }
 
-  handleKeyDown(event: KeyboardEvent): void {
-    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
-      event.preventDefault();
-      this.cancelPending();
-      this.triggerTranslation();
-    }
-  }
+  handleKeyDown(event: KeyboardEvent): void {}
 }

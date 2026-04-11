@@ -7,6 +7,7 @@
       [subtitle]="'Translate text between 15 languages instantly'"
       [isDark]="isDark()"
       (toggleTheme)="toggleTheme()"
+      (showShortcuts)="toggleShortcuts()"
     />
 
     <main
@@ -27,6 +28,7 @@
           >
             <label for="sourceLang">From</label>
             <app-language-selector
+              #sourceLangSelector
               [labelId]="'sourceLang'"
               [languages]="languages()"
               [selectedLang]="sourceLang()"
@@ -35,6 +37,7 @@
           </div>
 
           <app-text-input
+            #textInput
             [inputId]="'inputText'"
             [placeholder]="'Enter text to translate...'"
             [text]="inputText()"
@@ -57,6 +60,7 @@
             <div class="flex items-center gap-2">
               <app-loading-spinner [isLoading]="isLoading()" />
               <app-language-selector
+                #targetLangSelector
                 [labelId]="'targetLang'"
                 [languages]="languages()"
                 [selectedLang]="targetLang()"
@@ -88,5 +92,10 @@
     <footer class="mt-8 text-center text-sm dark:text-slate-400 text-slate-500">
       <p>Translator - Translate text between 15 languages instantly</p>
     </footer>
+
+    <app-shortcuts-overlay
+      [shortcuts]="showShortcuts()"
+      (close)="showShortcuts.set(false)"
+    />
   </div>
 </div>
