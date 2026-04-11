@@ -1,5 +1,6 @@
 <div class="relative">
   <textarea
+    #textArea
     [ngModel]="text()"
     (ngModelChange)="text.set($event); onTextChange()"
     (keydown)="keyDown.emit($event)"

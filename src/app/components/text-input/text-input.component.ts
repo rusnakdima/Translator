@@ -1,5 +1,12 @@
 /* sys lib */
-import { Component, input, output, model } from "@angular/core";
+import {
+  Component,
+  input,
+  output,
+  model,
+  ViewChild,
+  ElementRef,
+} from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { AutoResizeDirective } from "@directives/auto-resize.directive";
 import { AppIconComponent } from "@components/icons/app-icon.component";
@@ -11,6 +18,8 @@ import { AppIconComponent } from "@components/icons/app-icon.component";
   templateUrl: "./text-input.component.html",
 })
 export class TextInputComponent {
+  @ViewChild("textArea") textAreaRef!: ElementRef<HTMLTextAreaElement>;
+
   inputId = input.required<string>();
   placeholder = input.required<string>();
   text = model.required<string>();
@@ -18,6 +27,10 @@ export class TextInputComponent {
   keyDown = output<KeyboardEvent>();
   textChange = output<string>();
   clear = output<void>();
+
+  focus(): void {
+    this.textAreaRef?.nativeElement.focus();
+  }
 
   onTextChange(): void {
     this.textChange.emit(this.text());
