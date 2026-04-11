@@ -47,6 +47,20 @@
   </provides>
 
   <releases>
+    <release version="0.4.0" date="2026-04-11">
+      <description>
+        <p>Version 0.4.0 adds keyboard shortcuts system for power users.</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Keyboard shortcuts overlay (press Ctrl+/) with floating modal window</li>
+          <li>Quick paste from clipboard (Ctrl+Shift+V) - paste without focusing input</li>
+          <li>Quick copy translation (Ctrl+Shift+C) - copy without clicking</li>
+          <li>Focus shortcuts: source input (Ctrl+Shift+S), source language (Ctrl+Shift+L), target language (Ctrl+Shift+;)</li>
+          <li>Standard shortcuts: translate (Ctrl+Enter), swap languages (Ctrl+L), toggle shortcuts (Ctrl+/)</li>
+        </ul>
+        <p>Also includes keyboard button in header for opening shortcuts list via click.</p>
+      </description>
+    </release>
     <release version="0.3.0" date="2026-03-29">
       <description>
         <p>Version 0.3.0 improves the input experience, tightens UI consistency, and streamlines maintenance tooling.</p>
