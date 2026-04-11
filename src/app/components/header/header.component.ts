@@ -15,4 +15,5 @@ export class HeaderComponent {
   subtitle = input.required<string>();
   isDark = input.required<boolean>();
   toggleTheme = output<void>();
+  showShortcuts = output<void>();
 }
