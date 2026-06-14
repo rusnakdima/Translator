@@ -33,6 +33,7 @@
     "@angular/router": "^20.1.4",
     "@tailwindcss/postcss": "^4.1.18",
     "@tauri-apps/api": "~2.10.0",
+    "@tauri-apps/logger": "git+https://github.com/rusnakdima/tauri-apps-logger.git#main",
     "@tauri-apps/plugin-opener": "^2",
     "postcss": "^8.5.6",
     "rxjs": "~7.8.2",
