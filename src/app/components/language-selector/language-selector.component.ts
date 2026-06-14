@@ -3,7 +3,7 @@ import { Component, input, output, ViewChild, ElementRef } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
 /* models */
-import { Language } from "@models/translation.model";
+import { Language } from "@features/translation/models/translation.model";
 
 /* components */
 import { AppIconComponent } from "@components/icons/app-icon.component";

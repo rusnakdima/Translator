@@ -1,5 +1,5 @@
 import { Routes } from "@angular/router";
-import { TranslationComponent } from "@views/translation/translation.component";
+import { TranslationComponent } from "@features/translation/views/translation/translation.component";
 
 export const routes: Routes = [
   {

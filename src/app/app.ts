@@ -2,9 +2,9 @@
 import { Component, signal } from "@angular/core";
 
 /* components */
-import { TranslationComponent } from "@views/translation/translation.component";
+import { TranslationComponent } from "@features/translation/views/translation/translation.component";
 import { ToastComponent, ToastType } from "@components/toast/toast.component";
-import { ToastKind } from "@constants/app.constants";
+import { ToastKind } from "@shared/utils/constants";
 
 @Component({
   selector: "app-root",

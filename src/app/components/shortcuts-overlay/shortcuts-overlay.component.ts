@@ -2,7 +2,7 @@
 import { Component, input, output } from "@angular/core";
 
 /* constants */
-import { SHORTCUTS, Shortcut } from "@constants/shortcuts.constants";
+import { SHORTCUTS, Shortcut } from "@shared/utils/constants";
 
 /* components */
 import { AppIconComponent } from "@components/icons/app-icon.component";

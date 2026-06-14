@@ -1,7 +1,7 @@
 /* sys lib */
 import { Component, input, output } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { AutoResizeDirective } from "@directives/auto-resize.directive";
+import { AutoResizeDirective } from "@shared/auto-resize.directive";
 import { AppIconComponent } from "@components/icons/app-icon.component";
 
 @Component({
