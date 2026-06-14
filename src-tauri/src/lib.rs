@@ -11,7 +11,8 @@ use models::translation_model::LanguagesResponse;
 use routes::translation_route::TranslationRoute;
 use services::translation_service::TranslationService;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use tauri::{Emitter, State, Window};
+use tauri::{Emitter, Manager, State, Window};
+use tauri_logger::{init_file_logger, log_warn, FileLogger};
 
 static REQUEST_ID: AtomicUsize = AtomicUsize::new(0);
 
@@ -63,9 +64,18 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
       get_supported_languages,
-      translate_text
+      translate_text,
     ])
     .manage(TranslationService::default())
+    .setup(|app| {
+      let file_logger = init_file_logger(&app.handle()).unwrap_or_else(|e| {
+        log_warn!("Failed to init file logger: {}", e);
+        FileLogger::new()
+      });
+      app.manage(file_logger);
+      log_warn!("File logger initialized");
+      Ok(())
+    })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
