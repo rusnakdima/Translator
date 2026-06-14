@@ -436,8 +436,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fac4744fb15ae8337dc853fee7fb3f4e48c0fbaa23d0afe49c447b4fab126118"
 dependencies = [
  "iana-time-zone",
+ "js-sys",
  "num-traits",
  "serde",
+ "wasm-bindgen",
  "windows-link 0.2.1",
 ]
 
@@ -3447,6 +3449,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-logger"
+version = "0.1.1"
+source = "git+https://github.com/rusnakdima/tauri-logger.git?branch=main#1621b4208863ad38b46bd5f0ee3f3154d6e74fd2"
+dependencies = [
+ "chrono",
+ "log",
+ "parking_lot",
+ "serde",
+ "tauri",
+]
+
+[[package]]
 name = "tauri-macros"
 version = "2.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3907,10 +3921,13 @@ dependencies = [
 name = "translator"
 version = "0.4.0"
 dependencies = [
+ "chrono",
+ "log",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-logger",
  "tauri-plugin-opener",
 ]
 

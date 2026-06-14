@@ -46,12 +46,14 @@ TranslationAssistant/
 ## Key Conventions
 
 ### Rust (Backend)
+
 - Variables and functions: `camelCase`
 - Files: `kebab-case-name.singular-folder-derivative.rs`
 - Structs: `PascalCase`
 - Traits: `PascalCase`
 
 ### Angular (Frontend)
+
 - Components: `<name>.component.ts` with `NameComponent` class
 - Services: `<name>.service.ts` with `NameService` class
 - Models: `<name>.model.ts` with `Name` class/interface
