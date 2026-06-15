@@ -1,4 +1,10 @@
-import { Directive, ElementRef, HostListener, input } from "@angular/core";
+import {
+  Directive,
+  ElementRef,
+  HostListener,
+  input,
+  inject,
+} from "@angular/core";
 
 @Directive({
   selector: "[appAutoResize]",
@@ -8,7 +14,7 @@ export class AutoResizeDirective {
   maxHeight = input<number>(Infinity);
   minHeight = input<number>(0);
 
-  constructor(private elementRef: ElementRef<HTMLTextAreaElement>) {}
+  private elementRef = inject(ElementRef<HTMLTextAreaElement>);
 
   @HostListener("input")
   onInput(): void {

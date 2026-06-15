@@ -15,12 +15,12 @@ import { AppIconComponent } from "@components/icons/app-icon.component";
 })
 export class ShortcutsOverlayComponent {
   shortcuts = input.required<boolean>();
-  close = output<void>();
+  closed = output<void>();
 
   shortcutsList: Shortcut[] = SHORTCUTS;
 
   onClose(): void {
-    this.close.emit();
+    this.closed.emit();
   }
 
   onBackdropClick(event: MouseEvent): void {
