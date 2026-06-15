@@ -1,5 +1,5 @@
 use crate::helpers::translator_helper::Translator;
-use crate::models::response_model::Response;
+use crate::models::response::Response;
 use crate::models::translation_model::{Language, LanguagesResponse, TranslationResponse};
 
 #[derive(Clone, Default)]
@@ -15,7 +15,7 @@ impl TranslationService {
       .collect();
 
     let data = LanguagesResponse { languages };
-    Response::success("Languages retrieved successfully".to_string(), data)
+    Response::success(data)
   }
 
   pub fn translate(
@@ -41,6 +41,6 @@ impl TranslationService {
       source_lang: source_lang.to_string(),
       target_lang: target_lang.to_string(),
     };
-    Response::success("Translation completed successfully".to_string(), data)
+    Response::success(data)
   }
 }

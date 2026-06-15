@@ -1,12 +1,14 @@
 #[cfg(mobile)]
 use tauri::mobile_entry_point;
 
+mod errors;
 mod helpers;
+mod logger;
 mod models;
 pub mod routes;
 mod services;
 
-use models::response_model::Response;
+use models::response::Response;
 use models::translation_model::LanguagesResponse;
 use routes::translation_route::TranslationRoute;
 use services::translation_service::TranslationService;
@@ -59,6 +61,8 @@ async fn translate_text(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  logger::init_logger();
+
   tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
@@ -66,9 +70,7 @@ pub fn run() {
       translate_text,
     ])
     .manage(TranslationService::default())
-    .setup(|_app| {
-      Ok(())
-    })
+    .setup(|_app| Ok(()))
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

@@ -1,4 +1,4 @@
-use crate::models::response_model::Response;
+use crate::models::response::Response;
 use crate::models::translation_model::LanguagesResponse;
 use crate::services::translation_service::TranslationService;
 use tauri::State;
