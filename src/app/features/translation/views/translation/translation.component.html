@@ -1,0 +1,55 @@
+<app-header
+  title="Translator"
+  subtitle="Translate text between languages"
+  [isDark]="isDark()"
+  (toggleTheme)="onToggleTheme()"
+  (showShortcuts)="onShowShortcuts()"
+/>
+
+<div class="mx-auto max-w-3xl space-y-6">
+  <div class="grid grid-cols-[1fr,auto,1fr] gap-4">
+    <div class="space-y-2">
+      <app-language-selector
+        labelId="source-lang"
+        [languages]="languages"
+        [selectedLang]="sourceLang()"
+        (selectedLangChange)="onSourceLangChange($event)"
+      />
+      <app-text-input
+        inputId="source-text"
+        placeholder="Enter text to translate..."
+        [text]="sourceText()"
+        [charCount]="sourceText().length + ' / 5000'"
+        (textChange)="onSourceTextChange($event)"
+      />
+    </div>
+
+    <div class="flex items-center">
+      <app-swap-button (swap)="onSwap()" />
+    </div>
+
+    <div class="space-y-2">
+      <app-language-selector
+        labelId="target-lang"
+        [languages]="languages"
+        [selectedLang]="targetLang()"
+        (selectedLangChange)="onTargetLangChange($event)"
+      />
+      <app-translation-output
+        outputId="translated-text"
+        placeholder="Translation will appear here..."
+        [translatedText]="translatedText()"
+        (copyClick)="onCopy()"
+      />
+    </div>
+  </div>
+
+  <div class="flex justify-center">
+    <app-loading-spinner [isLoading]="isLoading()" />
+  </div>
+</div>
+
+<app-shortcuts-overlay
+  [shortcuts]="showShortcuts()"
+  (close)="onCloseShortcuts()"
+/>
