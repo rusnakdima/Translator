@@ -1,6 +1,10 @@
 use std::io::Write;
 use std::process::{Command, Stdio};
 
+fn io_error_context(err: std::io::Error, context: &str) -> String {
+  format!("Failed to {}: {}", context, err)
+}
+
 #[derive(Clone, Copy, Default)]
 pub struct Translator;
 
@@ -61,18 +65,18 @@ impl Translator {
       .stdout(Stdio::piped())
       .stderr(Stdio::piped())
       .spawn()
-      .map_err(|e| format!("Failed to execute translation command: {}", e))?;
+      .map_err(|e| io_error_context(e, "execute translation command"))?;
 
     {
       let stdin = child.stdin.as_mut().ok_or("Failed to get stdin")?;
       stdin
         .write_all(text.as_bytes())
-        .map_err(|e| format!("Failed to write to stdin: {}", e))?;
+        .map_err(|e| io_error_context(e, "write to stdin"))?;
     }
 
     let output = child
       .wait_with_output()
-      .map_err(|e| format!("Failed to read output: {}", e))?;
+      .map_err(|e| io_error_context(e, "read output"))?;
 
     if !output.status.success() {
       let stderr = String::from_utf8_lossy(&output.stderr);

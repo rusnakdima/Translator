@@ -8,7 +8,7 @@ mod services;
 
 use models::response_model::Response;
 use models::translation_model::LanguagesResponse;
-use routes::translation_route::TranslationRoute;
+use routes::translation_route::get_supported_languages as get_langs;
 use services::translation_service::TranslationService;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tauri::{Emitter, Manager, State, Window};
@@ -20,7 +20,7 @@ const TAURI_EVENT_TRANSLATION_RESULT: &str = "translation-result";
 
 #[tauri::command]
 fn get_supported_languages(state: State<'_, TranslationService>) -> Response<LanguagesResponse> {
-  TranslationRoute::get_supported_languages(state)
+  get_langs(state)
 }
 
 #[tauri::command]

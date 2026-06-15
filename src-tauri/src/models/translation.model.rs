@@ -8,6 +8,24 @@ pub struct TranslationResponse {
   pub target_lang: String,
 }
 
+impl TranslationResponse {
+  pub fn new(translated_text: String, source_lang: String, target_lang: String) -> Self {
+    Self {
+      translated_text,
+      source_lang,
+      target_lang,
+    }
+  }
+
+  pub fn empty(source_lang: String, target_lang: String) -> Self {
+    Self {
+      translated_text: String::new(),
+      source_lang,
+      target_lang,
+    }
+  }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Language {

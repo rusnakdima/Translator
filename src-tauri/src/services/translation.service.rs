@@ -24,23 +24,22 @@ impl TranslationService {
     source_lang: &str,
     target_lang: &str,
   ) -> Response<TranslationResponse> {
-    let translated_text = match self.translator.translate(text, source_lang, target_lang) {
+    let source_lang = source_lang.to_string();
+    let target_lang = target_lang.to_string();
+
+    let translated_text = match self.translator.translate(text, &source_lang, &target_lang) {
       Ok(text) => text,
       Err(e) => {
-        let data = TranslationResponse {
-          translated_text: String::new(),
-          source_lang: source_lang.to_string(),
-          target_lang: target_lang.to_string(),
-        };
-        return Response::error_with_data(format!("Translation failed: {}", e), data);
+        return Response::error_with_data(
+          format!("Translation failed: {}", e),
+          TranslationResponse::empty(source_lang.clone(), target_lang.clone()),
+        );
       }
     };
 
-    let data = TranslationResponse {
-      translated_text,
-      source_lang: source_lang.to_string(),
-      target_lang: target_lang.to_string(),
-    };
-    Response::success("Translation completed successfully".to_string(), data)
+    Response::success(
+      "Translation completed successfully".to_string(),
+      TranslationResponse::new(translated_text, source_lang, target_lang),
+    )
   }
 }

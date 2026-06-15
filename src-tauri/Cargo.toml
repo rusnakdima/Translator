@@ -22,7 +22,5 @@ tauri = { version = "2.10", features = [] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-log = "0.4"
-chrono = { version = "0.4", features = ["serde"] }
 tauri-logger = { git = "https://github.com/rusnakdima/tauri-logger.git", branch = "main", features = ["tauri"] }
 
