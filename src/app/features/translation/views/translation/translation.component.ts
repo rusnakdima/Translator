@@ -87,6 +87,12 @@ export class TranslationComponent implements OnInit {
 
   @HostListener("window:keydown", ["$event"])
   handleGlobalKeyDown(event: KeyboardEvent): void {
+    if (event.key === "F1") {
+      event.preventDefault();
+      this.showShortcuts.set(true);
+      return;
+    }
+
     if ((event.ctrlKey || event.metaKey) && event.key === "/") {
       event.preventDefault();
       this.showShortcuts.update((v) => !v);

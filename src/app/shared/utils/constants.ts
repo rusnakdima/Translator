@@ -23,6 +23,11 @@ export interface Shortcut {
 
 export const SHORTCUTS: Shortcut[] = [
   {
+    key: "F1",
+    description: "Show keyboard shortcuts",
+    action: "show-shortcuts",
+  },
+  {
     key: "Ctrl + /",
     description: "Show keyboard shortcuts",
     action: "show-shortcuts",
