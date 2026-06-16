@@ -37,8 +37,12 @@ bun.lockd
 /connect.lock
 /coverage
 /libpeerconnection.log
-testem.log
+/testem.log
 /typings
+
+# Project specific
+.mimicode/
+RELEASE.md
 
 # System files
 .DS_Store
