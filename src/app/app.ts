@@ -4,7 +4,7 @@ import { Component, signal } from "@angular/core";
 /* components */
 import { TranslationComponent } from "@features/translation/views/translation/translation.component";
 import { ToastComponent } from "@components/toast/toast.component";
-import { ToastKind } from "@shared/utils/constants";
+import { ToastType, ToastKind } from "@shared/utils/constants";
 
 @Component({
   selector: "app-root",
@@ -15,12 +15,12 @@ import { ToastKind } from "@shared/utils/constants";
 export class App {
   toastMessage = signal<string>("");
   toastVisible = signal<boolean>(false);
-  toastType = signal<ToastKind>(ToastKind.Info);
+  toastType = signal<ToastType>(ToastKind.Info);
 
   constructor() {
     window.showToast = (
       message: string,
-      type: ToastKind = ToastKind.Info,
+      type: ToastType = ToastKind.Info,
       duration: number = 3000,
     ) => {
       this.toastMessage.set(message);
