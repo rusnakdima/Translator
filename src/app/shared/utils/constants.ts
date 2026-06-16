@@ -1,4 +1,4 @@
-import type { ToastType } from "@components/toast/toast.component";
+export type ToastType = "info" | "success" | "error";
 
 export const TAURI_EVENTS = {
   translationResult: "translation-result",

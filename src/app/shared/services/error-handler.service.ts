@@ -1,4 +1,4 @@
-import { getLoggingService } from "@tauri-apps/logger";
+import { loggerService } from "../../core/services/logger.service";
 
 export interface ErrorDetails {
   message: string;
@@ -7,8 +7,6 @@ export interface ErrorDetails {
 }
 
 export class ErrorHandlerService {
-  private static loggingService = getLoggingService();
-
   static handle(error: unknown, context?: string): Error {
     const message = error instanceof Error ? error.message : String(error);
     const details: ErrorDetails = {
@@ -17,9 +15,9 @@ export class ErrorHandlerService {
     };
 
     if (context) {
-      this.loggingService.error(`[${context}]`, details);
+      loggerService.error(`[${context}]`, "ErrorHandlerService", details);
     } else {
-      this.loggingService.error("Unhandled error", details);
+      loggerService.error("Unhandled error", "ErrorHandlerService", details);
     }
 
     return new Error(message);

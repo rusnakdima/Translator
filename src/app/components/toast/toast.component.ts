@@ -1,7 +1,7 @@
 /* sys lib */
 import { Component, input, computed } from "@angular/core";
 
-import { ToastKind } from "@shared/utils/constants";
+import { ToastType } from "@shared/utils/constants";
 
 @Component({
   selector: "app-toast",
@@ -11,7 +11,7 @@ import { ToastKind } from "@shared/utils/constants";
 export class ToastComponent {
   message = input.required<string>();
   isVisible = input.required<boolean>();
-  type = input<ToastKind>("info");
+  type = input<ToastType>("info");
 
   toastClass = computed(() => {
     const baseClass =

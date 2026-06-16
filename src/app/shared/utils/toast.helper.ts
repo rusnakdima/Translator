@@ -1,5 +1,4 @@
-import { ToastType } from "@components/toast/toast.component";
-import { ToastKind } from "@shared/utils/constants";
+import { ToastType, ToastKind } from "@shared/utils/constants";
 
 export class ToastHelper {
   static show(
