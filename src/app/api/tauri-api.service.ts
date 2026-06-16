@@ -1,18 +1,16 @@
 import { Injectable } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
-import { getLoggingService } from "@tauri-apps/logger";
+import { loggerService } from "../core/services/logger.service";
 
 @Injectable({ providedIn: "root" })
 export class TauriApiService {
-  private readonly loggingService = getLoggingService();
   private readonly defaultTimeout = 30000;
 
   async invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
-    const operationId = this.loggingService.logServiceEntry(
-      "TauriApiService",
-      "invoke",
-      { cmd, args },
-    );
+    loggerService.debug(`Invoking Tauri command: ${cmd}`, "TauriApiService", {
+      cmd,
+      args,
+    });
 
     try {
       const result = await this.withTimeout<T>(
@@ -21,26 +19,17 @@ export class TauriApiService {
         `Tauri command '${cmd}' timed out`,
       );
 
-      this.loggingService.logServiceExit(
-        "TauriApiService",
-        "invoke",
-        operationId,
-        0,
-        { cmd, success: true },
-      );
+      loggerService.info(`Tauri command succeeded: ${cmd}`, "TauriApiService", {
+        cmd,
+        success: true,
+      });
       return result;
     } catch (error) {
-      this.loggingService.error(`Tauri command '${cmd}' failed`, error, {
+      loggerService.error(`Tauri command '${cmd}' failed`, "TauriApiService", {
         cmd,
         args,
+        error,
       });
-      this.loggingService.logServiceExit(
-        "TauriApiService",
-        "invoke",
-        operationId,
-        0,
-        { cmd, success: false },
-      );
       throw error;
     }
   }
