@@ -47,6 +47,11 @@
   </provides>
 
   <releases>
+    <release version="0.5.0" date="2026-06-16">
+      <description>
+        <p>Release version 0.5.0</p>
+      </description>
+    </release>
     <release version="0.4.0" date="2026-04-11">
       <description>
         <p>Version 0.4.0 adds keyboard shortcuts system for power users.</p>

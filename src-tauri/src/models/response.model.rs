@@ -1,12 +1,10 @@
 use serde::Serialize;
 use serde_json::Value;
 
-#[derive(Serialize, Clone, PartialEq)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Status {
   Success,
-  Info,
-  Warning,
   Error,
 }
 
@@ -30,21 +28,7 @@ impl<T> Response<T> {
     Response::new(Status::Success, message, data)
   }
 
-  pub fn info(message: String, data: T) -> Self {
-    Response::new(Status::Info, message, data)
-  }
-
-  pub fn warning(message: String, data: T) -> Self {
-    Response::new(Status::Warning, message, data)
-  }
-
   pub fn error_with_data(message: String, data: T) -> Self {
     Response::new(Status::Error, message, data)
-  }
-}
-
-impl Response<Value> {
-  pub fn error(message: String) -> Self {
-    Response::new(Status::Error, message, Value::Null)
   }
 }
