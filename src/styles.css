@@ -45,7 +45,7 @@ select {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-slate-700 dark:bg-slate-700 bg-slate-200;
+  @apply dark:bg-slate-700 bg-slate-200;
 }
 
 ::-webkit-scrollbar-thumb {
