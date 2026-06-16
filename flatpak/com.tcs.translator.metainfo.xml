@@ -47,9 +47,21 @@
   </provides>
 
   <releases>
-    <release version="0.5.0" date="2026-06-16">
+    <release version="0.5.1" date="2026-06-16">
       <description>
-        <p>Release version 0.5.0</p>
+        <p>Version 0.5.1 brings new features, improvements, and bug fixes.</p>
+        <p>New Features:</p>
+        <ul>
+          <li>Environment configuration support for flexible settings</li>
+          <li>Tauri API service integration for native desktop functionality</li>
+          <li>Shared utilities and services module for common code</li>
+          <li>Translation feature module with improved structure</li>
+        </ul>
+        <p>Bug Fixes:</p>
+        <ul>
+          <li>Improved toast notification system with consolidated types</li>
+          <li>Fixed component behavior and improved directive implementation</li>
+        </ul>
       </description>
     </release>
     <release version="0.4.0" date="2026-04-11">
