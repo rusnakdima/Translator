@@ -10,6 +10,7 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
 
 /* services */
 import { TranslationService } from "@features/translation/services/translation.service";
@@ -311,8 +312,6 @@ export class TranslationComponent implements OnInit {
       return;
     }
 
-    const { invoke } = await import("@tauri-apps/api/core");
-
     const result = await invoke<number>("translate_text", {
       text,
       sourceLang: this.sourceLang(),
@@ -322,10 +321,6 @@ export class TranslationComponent implements OnInit {
     this.currentRequestId = result;
     this.isLoading.set(true);
     this.error.set(null);
-  }
-
-  async translate(): Promise<void> {
-    await this.triggerTranslation();
   }
 
   onInputChange(): void {
@@ -390,21 +385,4 @@ export class TranslationComponent implements OnInit {
       }, 500);
     }
   }
-
-  async copyToClipboard(): Promise<void> {
-    const text = this.translatedText();
-    if (!text) {
-      ToastHelper.show("Nothing to copy", ToastKind.Info);
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(text);
-      ToastHelper.show("Copied to clipboard!", ToastKind.Success);
-    } catch {
-      ToastHelper.show("Failed to copy", ToastKind.Error);
-    }
-  }
-
-  handleKeyDown(event: KeyboardEvent): void {}
 }

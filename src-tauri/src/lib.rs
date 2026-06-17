@@ -1,7 +1,6 @@
 #[cfg(mobile)]
 use tauri::mobile_entry_point;
 
-mod errors;
 mod helpers;
 mod logger;
 mod models;
