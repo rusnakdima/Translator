@@ -5,7 +5,7 @@ import { Component, input, output } from "@angular/core";
 import { SHORTCUTS, Shortcut } from "@shared/utils/constants";
 
 /* components */
-import { AppIconComponent } from "@components/icons.component/icons.component";
+import { AppIconComponent } from "@components/icons/icons.component";
 
 @Component({
   selector: "app-shortcuts-overlay",

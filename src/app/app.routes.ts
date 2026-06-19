@@ -1,9 +1,9 @@
 import { Routes } from "@angular/router";
-import { TranslationView } from "./views/translation-view/translation-view.view";
+import { TranslationPage } from "./pages/translation/translation.page";
 
 export const routes: Routes = [
   {
     path: "",
-    component: TranslationView,
+    component: TranslationPage,
   },
 ];

@@ -18,7 +18,9 @@
       "@shared/*": ["src/app/shared/*"],
       "@features/*": ["src/app/features/*"],
       "@api/*": ["src/app/api/*"],
-      "@stores/*": ["src/app/stores/*"],
+      "@store/*": ["src/app/store/*"],
+      "@pages/*": ["src/app/pages/*"],
+      "@entities/*": ["src/app/entities/*"],
       "@core/*": ["src/app/core/*"],
       "@app/*": ["src/app/*"],
       "@tauri-shared/*": ["../_shared/*"]

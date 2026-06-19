@@ -2,11 +2,11 @@
 import { Component, input, output, ViewChild, ElementRef } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 
-/* models */
-import { Language } from "@features/translation/models/translation.model";
+/* entities */
+import { Language } from "@features/translation/entities/translation.entity";
 
 /* components */
-import { AppIconComponent } from "@components/icons.component/icons.component";
+import { AppIconComponent } from "@components/icons/icons.component";
 
 @Component({
   selector: "app-language-selector",

@@ -1,8 +1,8 @@
 /* sys lib */
 import { Component, input, output } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { AutoResizeDirective } from "@shared/auto-resize.directive";
-import { AppIconComponent } from "@components/icons.component/icons.component";
+import { AutoResizeDirective } from "@shared/shared.auto-resize.directive";
+import { AppIconComponent } from "@components/icons/icons.component";
 
 @Component({
   selector: "app-translation-output",

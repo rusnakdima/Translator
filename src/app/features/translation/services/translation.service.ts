@@ -2,14 +2,14 @@
 import { Injectable, inject } from "@angular/core";
 
 /* services */
-import { InvokeWrapperService } from "@app/services/invoke-wrapper.service";
+import { InvokeWrapperService } from "@app/services/services.invoke-wrapper.service";
 
-/* models */
+/* entities */
 import {
   Language,
   LanguagesResponse,
-} from "@features/translation/models/translation.model";
-import { Response } from "@features/translation/models/response.model";
+} from "@features/translation/entities/translation.entity";
+import { Response } from "@features/translation/entities/response.entity";
 import { RESPONSE_STATUS } from "@shared/utils/constants";
 
 @Injectable({

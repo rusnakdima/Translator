@@ -13,13 +13,13 @@ import { listen } from "@tauri-apps/api/event";
 
 /* services */
 import { TranslationService } from "@features/translation/services/translation.service";
-import { InvokeWrapperService } from "@app/services/invoke-wrapper.service";
+import { InvokeWrapperService } from "@app/services/services.invoke-wrapper.service";
 
-/* models */
+/* entities */
 import {
   Language,
   TranslationResponse,
-} from "@features/translation/models/translation.model";
+} from "@features/translation/entities/translation.entity";
 
 /* helpers */
 import { ToastHelper } from "@shared/utils/toast.helper";
@@ -32,14 +32,14 @@ import {
 } from "@shared/utils/constants";
 
 /* components */
-import { HeaderComponent } from "@components/header.component/header.component";
-import { LanguageSelectorComponent } from "@components/language-selector.component/language-selector.component";
-import { TextInputComponent } from "@components/text-input.component/text-input.component";
-import { TranslationOutputComponent } from "@components/translation-output.component/translation-output.component";
-import { SwapButtonComponent } from "@components/swap-button.component/swap-button.component";
-import { LoadingSpinnerComponent } from "@components/loading-spinner.component/loading-spinner.component";
-import { AppIconComponent } from "@components/icons.component/icons.component";
-import { ShortcutsOverlayComponent } from "@components/shortcuts-overlay.component/shortcuts-overlay.component";
+import { HeaderComponent } from "@components/header/header.component";
+import { LanguageSelectorComponent } from "@components/language-selector/language-selector.component";
+import { TextInputComponent } from "@components/text-input/text-input.component";
+import { TranslationOutputComponent } from "@components/translation-output/translation-output.component";
+import { SwapButtonComponent } from "@components/swap-button/swap-button.component";
+import { LoadingSpinnerComponent } from "@components/loading-spinner/loading-spinner.component";
+import { AppIconComponent } from "@components/icons/icons.component";
+import { ShortcutsOverlayComponent } from "@components/shortcuts-overlay/shortcuts-overlay.component";
 
 interface TranslationResultEvent {
   requestId: number;
@@ -67,9 +67,9 @@ interface TranslationResultEvent {
     AppIconComponent,
     ShortcutsOverlayComponent,
   ],
-  templateUrl: "./translation-view.view.html",
+  templateUrl: "./translation.page.html",
 })
-export class TranslationView implements OnInit {
+export class TranslationPage implements OnInit {
   private translationService = inject(TranslationService);
   private invokeWrapper = inject(InvokeWrapperService);
 

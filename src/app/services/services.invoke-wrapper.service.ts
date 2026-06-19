@@ -1,6 +1,5 @@
 import { Injectable, inject } from "@angular/core";
-import { TauriApiService } from "@api/tauri-api.service";
-import { loggerService } from "@core/services/logger.service";
+import { TauriApiService } from "@api/api.api.service";
 
 export interface InvokeOptions {
   timeout?: number;
@@ -28,11 +27,6 @@ export class InvokeWrapperService {
         return await this.api.invoke<T>(cmd, args);
       } catch (error) {
         lastError = error;
-        loggerService.warn(
-          `Invoke attempt ${attempt + 1} failed for ${cmd}`,
-          "InvokeWrapperService",
-          { error, attempt, retryCount },
-        );
 
         if (attempt < retryCount) {
           await new Promise((resolve) => setTimeout(resolve, retryDelay));

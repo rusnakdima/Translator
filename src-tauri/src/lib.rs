@@ -2,7 +2,6 @@
 use tauri::mobile_entry_point;
 
 mod helpers;
-mod logger;
 mod models;
 mod services;
 
@@ -58,8 +57,6 @@ async fn translate_text(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-  logger::init_logger();
-
   tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
     .invoke_handler(tauri::generate_handler![
