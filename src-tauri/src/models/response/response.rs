@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub enum Status {
@@ -13,7 +12,6 @@ pub enum Status {
   Unauthorized,
   Forbidden,
 }
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
 #[serde(default)]
@@ -22,7 +20,6 @@ pub struct Response<T = serde_json::Value> {
   pub message: String,
   pub data: T,
 }
-
 impl<T> Default for Response<T>
 where
   T: Default,
@@ -35,7 +32,6 @@ where
     }
   }
 }
-
 impl<T> Response<T> {
   pub fn success(data: T) -> Self {
     Self {
@@ -44,7 +40,6 @@ impl<T> Response<T> {
       data,
     }
   }
-
   pub fn created(data: T) -> Self {
     Self {
       status: Status::Created,
@@ -52,7 +47,6 @@ impl<T> Response<T> {
       data,
     }
   }
-
   pub fn updated(data: T) -> Self {
     Self {
       status: Status::Updated,
@@ -60,7 +54,6 @@ impl<T> Response<T> {
       data,
     }
   }
-
   pub fn deleted(data: T) -> Self {
     Self {
       status: Status::Deleted,
@@ -68,7 +61,6 @@ impl<T> Response<T> {
       data,
     }
   }
-
   pub fn error_with_data(message: impl Into<String>, data: T) -> Self {
     Self {
       status: Status::Error,
@@ -77,7 +69,6 @@ impl<T> Response<T> {
     }
   }
 }
-
 impl Response<serde_json::Value> {
   pub fn error(message: impl Into<String>) -> Self {
     Self {
@@ -86,7 +77,6 @@ impl Response<serde_json::Value> {
       data: serde_json::Value::Null,
     }
   }
-
   pub fn validation_error(message: impl Into<String>) -> Self {
     Self {
       status: Status::ValidationError,
@@ -94,7 +84,6 @@ impl Response<serde_json::Value> {
       data: serde_json::Value::Null,
     }
   }
-
   pub fn not_found(entity: &str) -> Self {
     Self {
       status: Status::NotFound,
@@ -102,7 +91,6 @@ impl Response<serde_json::Value> {
       data: serde_json::Value::Null,
     }
   }
-
   pub fn unauthorized(message: impl Into<String>) -> Self {
     Self {
       status: Status::Unauthorized,
@@ -110,7 +98,6 @@ impl Response<serde_json::Value> {
       data: serde_json::Value::Null,
     }
   }
-
   pub fn forbidden(message: impl Into<String>) -> Self {
     Self {
       status: Status::Forbidden,
