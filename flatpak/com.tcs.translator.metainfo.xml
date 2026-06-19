@@ -47,6 +47,24 @@
   </provides>
 
   <releases>
+    <release version="0.5.2" date="2026-06-20">
+      <description>
+        <p>Release version 0.5.2 with code formatting, refactoring, and dependency updates.</p>
+        <p>Changes:</p>
+        <ul>
+          <li>Applied prettier to frontend and rustfmt to Rust backend for consistent code style</li>
+          <li>Restructured components and removed external logger dependency</li>
+          <li>Created internal LoggerService replacing @tauri-apps/logger</li>
+          <li>Unified structure with core/services, models/response modules</li>
+          <li>Replaced log crate with paste crate</li>
+        </ul>
+      </description>
+    </release>
+    <release version="0.4.1" date="2026-06-20">
+      <description>
+        <p>Release version 0.4.1</p>
+      </description>
+    </release>
     <release version="0.5.1" date="2026-06-16">
       <description>
         <p>Version 0.5.1 brings new features, improvements, and bug fixes.</p>
