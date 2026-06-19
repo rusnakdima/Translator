@@ -6,7 +6,7 @@ import { FormsModule } from "@angular/forms";
 import { Language } from "@features/translation/models/translation.model";
 
 /* components */
-import { AppIconComponent } from "@components/icons/app-icon.component";
+import { AppIconComponent } from "@components/icons.component/icons.component";
 
 @Component({
   selector: "app-language-selector",

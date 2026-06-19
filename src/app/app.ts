@@ -1,15 +1,17 @@
 /* sys lib */
 import { Component, signal } from "@angular/core";
 
+/* views */
+import { TranslationView } from "@app/views/translation-view/translation-view.view";
+
 /* components */
-import { TranslationComponent } from "@features/translation/views/translation/translation.component";
-import { ToastComponent } from "@components/toast/toast.component";
+import { ToastComponent } from "@components/toast.component/toast.component";
 import { ToastType, ToastKind } from "@shared/utils/constants";
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [TranslationComponent, ToastComponent],
+  imports: [TranslationView, ToastComponent],
   templateUrl: "./app.html",
 })
 export class App {

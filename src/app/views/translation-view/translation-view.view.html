@@ -14,11 +14,11 @@
       class="relative rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-lg dark:bg-slate-800/80 dark:border-slate-700 bg-white/80 border-slate-300"
     >
       @if (error(); as errorMessage) {
-        <div
-          class="mb-6 rounded-lg border p-4 text-center dark:bg-red-500/20 dark:border-red-500/50 bg-red-100 border-red-300"
-        >
-          <p class="dark:text-red-200 text-red-700">{{ errorMessage }}</p>
-        </div>
+      <div
+        class="mb-6 rounded-lg border p-4 text-center dark:bg-red-500/20 dark:border-red-500/50 bg-red-100 border-red-300"
+      >
+        <p class="dark:text-red-200 text-red-700">{{ errorMessage }}</p>
+      </div>
       }
 
       <div class="grid gap-2 md:grid-cols-[1fr_auto_1fr]">
@@ -43,7 +43,6 @@
             [text]="inputText()"
             (textChange)="onInputTextChange($event)"
             [charCount]="charCount()"
-            (keyDown)="handleKeyDown($event)"
             (clear)="onClearInput()"
           />
         </div>
@@ -73,14 +72,14 @@
             [outputId]="'outputText'"
             [placeholder]="'Translation will appear here as you type...'"
             [translatedText]="translatedText()"
-            (copyClick)="copyToClipboard()"
+            (copyClick)="quickCopy()"
           />
         </div>
       </div>
 
       <div class="mt-4 flex justify-center">
         <button
-          (click)="translate()"
+          (click)="triggerTranslation()"
           class="flex items-center gap-2 rounded-xl px-6 py-2.5 font-semibold text-white shadow-lg transition-all hover:shadow-indigo-500/25 dark:bg-indigo-600 dark:hover:bg-indigo-500 bg-indigo-600 hover:bg-indigo-500"
         >
           <app-icon name="translate" [svgClass]="'h-5 w-5'" />

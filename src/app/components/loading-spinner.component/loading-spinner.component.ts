@@ -2,7 +2,7 @@
 import { Component, input } from "@angular/core";
 
 /* components */
-import { AppIconComponent } from "@components/icons/app-icon.component";
+import { AppIconComponent } from "@components/icons.component/icons.component";
 
 @Component({
   selector: "app-loading-spinner",

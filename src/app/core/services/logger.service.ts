@@ -1,3 +1,6 @@
+import { inject } from "@angular/core";
+import { InvokeWrapperService } from "@app/services/invoke-wrapper.service";
+
 export enum LogLevel {
   Debug = 0,
   Info = 1,
@@ -18,6 +21,7 @@ export class LoggerService {
   private logs: LogEntry[] = [];
   private maxEntries = 1000;
   private currentLevel: LogLevel = LogLevel.Info;
+  private invokeWrapper = inject(InvokeWrapperService);
 
   private constructor() {}
 
@@ -42,6 +46,26 @@ export class LoggerService {
 
   error(message: string, context?: string, data?: unknown): void {
     this.log(LogLevel.Error, message, context, data);
+  }
+
+  private logToBackend(
+    level: LogLevel,
+    message: string,
+    context?: string,
+  ): void {
+    const levelMap: Record<LogLevel, string> = {
+      [LogLevel.Debug]: "debug",
+      [LogLevel.Info]: "info",
+      [LogLevel.Warn]: "warn",
+      [LogLevel.Error]: "error",
+    };
+    this.invokeWrapper
+      .invoke("log_message", {
+        level: levelMap[level],
+        component: context || "app",
+        message,
+      })
+      .catch(() => {});
   }
 
   private log(
@@ -74,6 +98,8 @@ export class LoggerService {
       `[${timestamp}] ${levelName} - ${context || "app"}: ${message}`,
       data || "",
     );
+
+    this.logToBackend(level, message, context);
   }
 
   getLogs(): LogEntry[] {

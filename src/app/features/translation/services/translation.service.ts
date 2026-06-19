@@ -2,7 +2,7 @@
 import { Injectable, inject } from "@angular/core";
 
 /* services */
-import { TauriApiService } from "@api/tauri-api.service";
+import { InvokeWrapperService } from "@app/services/invoke-wrapper.service";
 
 /* models */
 import {
@@ -16,13 +16,13 @@ import { RESPONSE_STATUS } from "@shared/utils/constants";
   providedIn: "root",
 })
 export class TranslationService {
-  private readonly tauriApi = inject(TauriApiService);
+  private readonly invokeWrapper = inject(InvokeWrapperService);
   private readonly maxChars = 5000;
 
   async getSupportedLanguages(): Promise<Language[]> {
-    const response = await this.tauriApi.invoke<Response<LanguagesResponse>>(
-      "get_supported_languages",
-    );
+    const response = await this.invokeWrapper.invoke<
+      Response<LanguagesResponse>
+    >("get_supported_languages");
     if (response.status === RESPONSE_STATUS.error) {
       throw new Error(response.message);
     }

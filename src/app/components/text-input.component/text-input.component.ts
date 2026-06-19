@@ -9,7 +9,7 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { AutoResizeDirective } from "@shared/auto-resize.directive";
-import { AppIconComponent } from "@components/icons/app-icon.component";
+import { AppIconComponent } from "@components/icons.component/icons.component";
 
 @Component({
   selector: "app-text-input",

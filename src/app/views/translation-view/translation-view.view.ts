@@ -10,10 +10,10 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { listen } from "@tauri-apps/api/event";
-import { invoke } from "@tauri-apps/api/core";
 
 /* services */
 import { TranslationService } from "@features/translation/services/translation.service";
+import { InvokeWrapperService } from "@app/services/invoke-wrapper.service";
 
 /* models */
 import {
@@ -32,14 +32,14 @@ import {
 } from "@shared/utils/constants";
 
 /* components */
-import { HeaderComponent } from "@components/header/header.component";
-import { LanguageSelectorComponent } from "@components/language-selector/language-selector.component";
-import { TextInputComponent } from "@components/text-input/text-input.component";
-import { TranslationOutputComponent } from "@components/translation-output/translation-output.component";
-import { SwapButtonComponent } from "@components/swap-button/swap-button.component";
-import { LoadingSpinnerComponent } from "@components/loading-spinner/loading-spinner.component";
-import { AppIconComponent } from "@components/icons/app-icon.component";
-import { ShortcutsOverlayComponent } from "@components/shortcuts-overlay/shortcuts-overlay.component";
+import { HeaderComponent } from "@components/header.component/header.component";
+import { LanguageSelectorComponent } from "@components/language-selector.component/language-selector.component";
+import { TextInputComponent } from "@components/text-input.component/text-input.component";
+import { TranslationOutputComponent } from "@components/translation-output.component/translation-output.component";
+import { SwapButtonComponent } from "@components/swap-button.component/swap-button.component";
+import { LoadingSpinnerComponent } from "@components/loading-spinner.component/loading-spinner.component";
+import { AppIconComponent } from "@components/icons.component/icons.component";
+import { ShortcutsOverlayComponent } from "@components/shortcuts-overlay.component/shortcuts-overlay.component";
 
 interface TranslationResultEvent {
   requestId: number;
@@ -67,10 +67,11 @@ interface TranslationResultEvent {
     AppIconComponent,
     ShortcutsOverlayComponent,
   ],
-  templateUrl: "./translation.component.html",
+  templateUrl: "./translation-view.view.html",
 })
-export class TranslationComponent implements OnInit {
+export class TranslationView implements OnInit {
   private translationService = inject(TranslationService);
+  private invokeWrapper = inject(InvokeWrapperService);
 
   readonly languages = signal<Language[]>([]);
   readonly translatedText = signal<string>("");
@@ -312,7 +313,7 @@ export class TranslationComponent implements OnInit {
       return;
     }
 
-    const result = await invoke<number>("translate_text", {
+    const result = await this.invokeWrapper.invoke<number>("translate_text", {
       text,
       sourceLang: this.sourceLang(),
       targetLang: this.targetLang(),

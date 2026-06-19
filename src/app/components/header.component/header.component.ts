@@ -2,7 +2,7 @@
 import { Component, input, output } from "@angular/core";
 
 /* components */
-import { ThemeToggleComponent } from "@components/theme-toggle/theme-toggle.component";
+import { ThemeToggleComponent } from "@components/theme-toggle.component/theme-toggle.component";
 
 @Component({
   selector: "app-header",
