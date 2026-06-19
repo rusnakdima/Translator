@@ -21,7 +21,7 @@ export class ToastComponent {
         "dark:bg-green-800 dark:border-green-600 dark:text-green-100 bg-green-50 border-green-400 text-green-800",
       error:
         "dark:bg-red-800 dark:border-red-600 dark:text-red-100 bg-red-50 border-red-400 text-red-800",
-      info: "dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100 bg-white border-slate-300 text-slate-700",
+      info: "dark:bg-neutral-800 dark:border-neutral-600 dark:text-neutral-100 bg-white border-slate-300 text-slate-700",
     };
     return `${baseClass} ${typeClasses[this.type()]}`;
   });
