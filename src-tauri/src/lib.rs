@@ -47,6 +47,7 @@ async fn translate_text(
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
+    .plugin(tauri_plugin_mcp_bridge::init())
     .invoke_handler(tauri::generate_handler![
       get_supported_languages,
       translate_text,
