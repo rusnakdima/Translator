@@ -1,32 +1,36 @@
 /* sys lib */
-import { Injectable, inject } from "@angular/core";
+import { Injectable } from "@angular/core";
 
-/* services */
-import { InvokeWrapperService } from "@app/services/services.invoke-wrapper.service";
+/* shared */
+import { InvokeWrapperService } from "@tauri-front/shared";
 
 /* entities */
 import {
   Language,
   LanguagesResponse,
 } from "@features/translation/entities/translation.entity";
-import { Response } from "@features/translation/entities/response.entity";
-import { RESPONSE_STATUS } from "@shared/utils/constants";
+
+interface ApiResponse<T> {
+  status: string;
+  message: string;
+  data: T | null;
+}
 
 @Injectable({
   providedIn: "root",
 })
 export class TranslationService {
-  private readonly invokeWrapper = inject(InvokeWrapperService);
+  private readonly invokeWrapper = new InvokeWrapperService();
   private readonly maxChars = 5000;
 
   async getSupportedLanguages(): Promise<Language[]> {
     const response = await this.invokeWrapper.invoke<
-      Response<LanguagesResponse>
+      ApiResponse<LanguagesResponse>
     >("get_supported_languages");
-    if (response.status === RESPONSE_STATUS.error) {
+    if (response.status === "error" || response.status === "Error") {
       throw new Error(response.message);
     }
-    return response.data.languages;
+    return response.data?.languages ?? [];
   }
 
   getMaxChars(): number {

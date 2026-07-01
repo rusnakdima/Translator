@@ -23,7 +23,6 @@ tauri-plugin-opener = "2"
 tauri-plugin-mcp-bridge = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-chrono = { version = "0.4", features = ["serde"] }
-dirs = "5"
-paste = "1.0"
+tokio = { version = "1", features = ["full"] }
+tauri-shared = { path = "/mnt/Other/Projects/Rust/tauri-shared", features = ["algorithms"] }
 

@@ -1,6 +1,6 @@
 use crate::helpers::translator_helper::Translator;
-use crate::models::response::Response;
 use crate::models::translation_model::{Language, LanguagesResponse, TranslationResponse};
+use tauri_shared::Response;
 #[derive(Clone, Default)]
 pub struct TranslationService {
   translator: Translator,
@@ -12,7 +12,7 @@ impl TranslationService {
       .map(|(code, name)| Language { code, name })
       .collect();
     let data = LanguagesResponse { languages };
-    Response::success(data)
+    Response::success(data, None)
   }
   pub fn translate(
     &self,
@@ -28,7 +28,11 @@ impl TranslationService {
           source_lang: source_lang.to_string(),
           target_lang: target_lang.to_string(),
         };
-        return Response::error_with_data(format!("Translation failed: {}", e), data);
+        return Response {
+          status: tauri_shared::Status::Error,
+          message: format!("Translation failed: {}", e),
+          data: Some(data),
+        };
       }
     };
     let data = TranslationResponse {
@@ -36,6 +40,6 @@ impl TranslationService {
       source_lang: source_lang.to_string(),
       target_lang: target_lang.to_string(),
     };
-    Response::success(data)
+    Response::success(data, None)
   }
 }
