@@ -17,13 +17,12 @@
       "@components/*": ["src/app/components/*"],
       "@shared/*": ["src/app/shared/*"],
       "@features/*": ["src/app/features/*"],
-      "@api/*": ["src/app/api/*"],
-      "@store/*": ["src/app/store/*"],
       "@pages/*": ["src/app/pages/*"],
-      "@entities/*": ["src/app/entities/*"],
       "@core/*": ["src/app/core/*"],
       "@app/*": ["src/app/*"],
-      "@tauri-shared/*": ["../_shared/*"]
+      "@tauri-shared/*": ["../_shared/*"],
+      "@tauri-front/shared": ["../../Web/tauri-front-shared/projects/shared/dist"],
+      "@tauri-front/shared/*": ["../../Web/tauri-front-shared/projects/shared/dist/*"]
     }
   },
   "angularCompilerOptions": {
