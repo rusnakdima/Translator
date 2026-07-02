@@ -261,3 +261,170 @@ No CRUD commands exist. Settings are not persisted in this project.
 - **camelCase** for all serialized struct fields (Rust `#[serde(rename_all = "camelCase")]` and TypeScript interfaces)
 - **2-space indent** for HTML/CSS
 - Use path aliases (`@components/*`, `@services/*`) as configured in `tsconfig.json`
+
+---
+
+## 8. Style System
+
+### Schema NEVER Contains CSS Classes
+
+Schema uses **semantic props only** — never CSS classes.
+
+```json
+{
+  "id": "content-grid",
+  "componentId": "div",
+  "props": { "layout": "grid", "gap": "md", "columns": "1fr auto 1fr" }
+}
+```
+
+**Why?**
+- Schema is shared between Designer and runtime — CSS classes couple schema to implementation
+- Props are semantic; themes transform them to CSS at render time
+- Dark mode: Props stay the same, only the theme changes
+
+### Schema Props Reference
+
+| Prop | Values | Purpose |
+|------|--------|---------|
+| `layout` | `flex`, `grid`, `stack`, `flow` | Layout mode |
+| `direction` | `row`, `col`, `row-reverse`, `col-reverse` | Flex direction |
+| `gap` | `xs`, `sm`, `md`, `lg`, `xl` | Spacing scale |
+| `columns` | CSS grid column string | Grid columns |
+| `align` | `start`, `center`, `end`, `stretch` | Alignment |
+| `justify` | `start`, `center`, `end`, `between` | Justification |
+| `padding` | `none`, `xs`, `sm`, `md`, `lg`, `xl` | Padding scale |
+| `visible` | `true`, `false` | Visibility |
+
+### TailwindCSS v4 with `@theme {}`
+
+All styling comes from `@tauri-front/shared` themes via TailwindCSS v4 `@theme {}` directive.
+
+```css
+/* CORRECT — theme-based styling */
+.my-wrapper { @apply flex flex-col gap-4 p-6 bg-base-100 rounded-lg; }
+
+/* WRONG — raw CSS properties */
+.my-wrapper { display: flex; flex-direction: column; gap: 1rem; }
+```
+
+### Dark Mode
+
+- **Trigger**: `html.dark` class on the `<html>` element
+- **Toggle**: `ThemeService.toggleDarkMode()`
+
+```typescript
+import { ThemeService } from '@tauri-front/shared';
+ThemeService.toggleDarkMode();
+```
+
+### Loading Themes
+
+Apps import themes via `StyleThemeService.loadTheme(variant)`:
+
+```typescript
+import { StyleThemeService } from '@tauri-front/shared';
+
+StyleThemeService.loadTheme('default');  // Light
+StyleThemeService.loadTheme('dark');     // Dark
+```
+
+---
+
+## 9. Migration Guide: Old Style System → New Style System
+
+### Overview
+
+The new style system moves from **CSS classes in schema** to **semantic props in schema + TailwindCSS v4 themes**.
+
+### Step 1: Update Schema
+
+**Before (OLD):**
+```json
+{
+  "componentId": "div",
+  "classes": "grid gap-4 md:grid-cols-[1fr_auto_1fr] items-stretch p-6 bg-base-100 rounded-lg"
+}
+```
+
+**After (NEW):**
+```json
+{
+  "componentId": "div",
+  "props": {
+    "layout": "grid",
+    "gap": "md",
+    "columns": "1fr auto 1fr",
+    "align": "stretch",
+    "padding": "md",
+    "rounded": true
+  }
+}
+```
+
+### Step 2: Remove Inline Classes
+
+**Before (OLD):**
+```html
+<div class="flex flex-col gap-4 p-6 bg-base-100 rounded-lg">
+  <app-button class="w-full"></app-button>
+</div>
+```
+
+**After (NEW):**
+```html
+<div class="schema-props-target">
+  <app-button></app-button>
+</div>
+```
+
+```css
+.schema-props-target { @apply flex flex-col gap-4 p-6 bg-base-100 rounded-lg; }
+```
+
+### Step 3: Use ThemeService for Dark Mode
+
+**Before (OLD):**
+```typescript
+document.documentElement.classList.toggle('dark');
+```
+
+**After (NEW):**
+```typescript
+import { ThemeService } from '@tauri-front/shared';
+ThemeService.toggleDarkMode();
+```
+
+### Step 4: Load Themes at Startup
+
+```typescript
+import { StyleThemeService } from '@tauri-front/shared';
+StyleThemeService.loadTheme('default');
+```
+
+### Step 5: Replace Raw CSS Properties
+
+**Before (OLD):**
+```css
+.my-component {
+  --my-bg: #f5f5f5;
+  background: var(--my-bg);
+  display: flex;
+  flex-direction: column;
+}
+```
+
+**After (NEW):**
+```css
+.my-component {
+  @apply bg-base-100 flex flex-col;
+}
+```
+
+### Verification Checklist
+
+- [ ] Schema contains no `classes` field — only `props`
+- [ ] All styling uses `@apply` with theme tokens
+- [ ] Dark mode uses `ThemeService.toggleDarkMode()`
+- [ ] Theme loaded via `StyleThemeService.loadTheme()`
+- [ ] No raw CSS properties (display, flex-direction, padding, etc.)
