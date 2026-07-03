@@ -344,6 +344,53 @@ StyleThemeService.loadTheme('default');  // Light
 StyleThemeService.loadTheme('dark');     // Dark
 ```
 
+### Global Style Variants
+
+Schema supports global `variant` and `size` keys in the `app` section that automatically apply to all UI components:
+
+```json
+{
+  "app": {
+    "variant": "ghost",
+    "size": "sm"
+  },
+  "pages": [...]
+}
+```
+
+**How it works:**
+- `variant` sets the base style (e.g., `"ghost"`, `"solid"`, `"text"`)
+- `size` sets the size modifier (e.g., `"sm"`, `"md"`, `"lg"`)
+- All components inherit these global defaults automatically
+- Per-element `variant` and/or `size` props override the global defaults
+
+**App config example:**
+```json
+{
+  "app": {
+    "id": "translator_schema",
+    "name": "translator",
+    "style": "material-design-v3",
+    "variant": "ghost",
+    "size": "sm"
+  },
+  "pages": [
+    {
+      "id": "main",
+      "elements": [
+        {
+          "componentId": "app-button",
+          "props": {
+            "variant": "solid",
+            "icon": "keyboard"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
 ---
 
 ## 9. Migration Guide: Old Style System → New Style System
