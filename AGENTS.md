@@ -283,18 +283,33 @@ Schema uses **semantic props only** — never CSS classes.
 - Props are semantic; themes transform them to CSS at render time
 - Dark mode: Props stay the same, only the theme changes
 
+### Schema Lives in JSON DB — NOT in Project Repo
+
+The schema is stored in the JSON database only:
+`~/.local/share/com.tcs.translator/translator_db/schemas.json`
+
+**Never commit schema files in project repositories.** Each app manages its own schema via the DB.
+
 ### Schema Props Reference
 
 | Prop | Values | Purpose |
 |------|--------|---------|
+| `styleName` | Named style (e.g. `"solid"`, `"ghost-sm"`) | Global named style lookup in theme registry |
 | `layout` | `flex`, `grid`, `stack`, `flow` | Layout mode |
 | `direction` | `row`, `col`, `row-reverse`, `col-reverse` | Flex direction |
 | `gap` | `xs`, `sm`, `md`, `lg`, `xl` | Spacing scale |
 | `columns` | CSS grid column string | Grid columns |
 | `align` | `start`, `center`, `end`, `stretch` | Alignment |
-| `justify` | `start`, `center`, `end`, `between` | Justification |
+| `justify` | `start`, `center`, `end`, `between`, `around` | Justification |
 | `padding` | `none`, `xs`, `sm`, `md`, `lg`, `xl` | Padding scale |
+| `marginTop`, `marginBottom` | `xs`, `sm`, `md`, `lg`, `xl` | Margin spacing |
+| `maxWidth` | `sm`, `md`, `lg`, `xl`, `2xl`, `6xl` | Max width |
+| `mx` | `auto` | Horizontal margin auto |
+| `fullHeight` | `true` | Full viewport height |
+| `rounded` | `true` | Rounded corners |
 | `visible` | `true`, `false` | Visibility |
+| `i18nKey` | dot-notation string | i18n translation key |
+| `placeholder_i18n` | dot-notation string | Placeholder translation key |
 
 ### TailwindCSS v4 with `@theme {}`
 
@@ -362,6 +377,36 @@ The new style system moves from **CSS classes in schema** to **semantic props in
 }
 ```
 
+### Step 1b: Use styleName for Component Styling
+
+**Before (OLD):** Individual variant/size props
+```json
+{
+  "componentId": "app-button",
+  "props": {
+    "buttonStyle": "ghost",
+    "variant": "primary",
+    "size": "sm",
+    "icon": "keyboard",
+    "i18nKey": "header.shortcuts"
+  }
+}
+```
+
+**After (NEW):** Named style from global registry
+```json
+{
+  "componentId": "app-button",
+  "props": {
+    "styleName": "ghost-sm",
+    "icon": "keyboard",
+    "i18nKey": "header.shortcuts"
+  }
+}
+```
+
+Available `styleName` values per theme are defined in `@tauri-front/shared` `StyleVariantConfig.componentStyles`. Common names: `"solid"`, `"ghost"`, `"text"`, `"icon"`, `"solid-sm"`, `"ghost-sm"`, `"text-sm"`, `"icon-sm"`.
+
 ### Step 2: Remove Inline Classes
 
 **Before (OLD):**
@@ -424,7 +469,9 @@ StyleThemeService.loadTheme('default');
 ### Verification Checklist
 
 - [ ] Schema contains no `classes` field — only `props`
+- [ ] Schema lives in JSON DB (`~/.local/share/<bundle_id>/schemas.json`) — not committed in project repo
 - [ ] All styling uses `@apply` with theme tokens
 - [ ] Dark mode uses `ThemeService.toggleDarkMode()`
 - [ ] Theme loaded via `StyleThemeService.loadTheme()`
 - [ ] No raw CSS properties (display, flex-direction, padding, etc.)
+- [ ] Component styles use `styleName` prop (named style lookup) — no `variant`/`size`/`buttonStyle` props
