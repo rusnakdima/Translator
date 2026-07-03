@@ -135,29 +135,29 @@ export class App implements OnInit, OnDestroy {
       const page = schema.pages[0];
 
       // Register components with SchemaRenderer
-      this.schemaRenderer.setComponentResolver((selector) => ({
-        selector,
-        id: selector,
-        name: selector,
-        packageType: "ui",
-        category: "general",
-        props: {},
-        defaultClasses: "",
-      } as any));
+      this.schemaRenderer.setComponentResolver(
+        (selector) =>
+          ({
+            selector,
+            id: selector,
+            name: selector,
+            packageType: "ui",
+            category: "general",
+            props: {},
+            defaultClasses: "",
+          }) as any,
+      );
 
       // Load schema into renderer
       this.schemaRenderer.loadSchema({ pages: [page] } as any);
 
       // Render into container
       if (this.schemaContainer) {
-        await this.schemaRenderer.render(
-          this.schemaContainer.nativeElement,
-          {
-            id: page.id,
-            name: page.meta?.title || page.id,
-            elements: page.canvasElements || [],
-          } as any,
-        );
+        await this.schemaRenderer.render(this.schemaContainer.nativeElement, {
+          id: page.id,
+          name: page.meta?.title || page.id,
+          elements: page.canvasElements || [],
+        } as any);
       }
 
       // Load shortcuts from schema dynamically
@@ -203,14 +203,11 @@ export class App implements OnInit, OnDestroy {
 
     // Source text input → schedule translation
     this.eventBusUnsubs.push(
-      this.eventBus.on(
-        "source-input:onInputTextChange",
-        (data: any) => {
-          const value = data?.event?.detail?.value ?? "";
-          this.inputText = value;
-          this.scheduleTranslation();
-        },
-      ),
+      this.eventBus.on("source-input:onInputTextChange", (data: any) => {
+        const value = data?.event?.detail?.value ?? "";
+        this.inputText = value;
+        this.scheduleTranslation();
+      }),
     );
 
     // Source input clear
@@ -220,28 +217,22 @@ export class App implements OnInit, OnDestroy {
 
     // Source language change
     this.eventBusUnsubs.push(
-      this.eventBus.on(
-        "source-lang:onSourceLangChange",
-        (data: any) => {
-          const value = data?.event?.detail?.value ?? "";
-          this.sourceLang = value;
-          GlobalStateService.instance.setSourceLang(value);
-          this.scheduleTranslation();
-        },
-      ),
+      this.eventBus.on("source-lang:onSourceLangChange", (data: any) => {
+        const value = data?.event?.detail?.value ?? "";
+        this.sourceLang = value;
+        GlobalStateService.instance.setSourceLang(value);
+        this.scheduleTranslation();
+      }),
     );
 
     // Target language change
     this.eventBusUnsubs.push(
-      this.eventBus.on(
-        "target-lang:onTargetLangChange",
-        (data: any) => {
-          const value = data?.event?.detail?.value ?? "";
-          this.targetLang = value;
-          GlobalStateService.instance.setTargetLang(value);
-          this.scheduleTranslation();
-        },
-      ),
+      this.eventBus.on("target-lang:onTargetLangChange", (data: any) => {
+        const value = data?.event?.detail?.value ?? "";
+        this.targetLang = value;
+        GlobalStateService.instance.setTargetLang(value);
+        this.scheduleTranslation();
+      }),
     );
 
     // Swap languages
@@ -301,7 +292,10 @@ export class App implements OnInit, OnDestroy {
         this.sourceLang = this.languages[0].code;
         GlobalStateService.instance.setSourceLang(this.languages[0].code);
         // Default target to second language or first non-source
-        const target = this.languages.length > 1 ? this.languages[1].code : this.languages[0].code;
+        const target =
+          this.languages.length > 1
+            ? this.languages[1].code
+            : this.languages[0].code;
         this.targetLang = target;
         GlobalStateService.instance.setTargetLang(target);
       }
@@ -384,11 +378,14 @@ export class App implements OnInit, OnDestroy {
       ToastHelper.show("Nothing to copy", ToastKind.Info);
       return;
     }
-    navigator.clipboard.writeText(this.translatedText).then(() => {
-      ToastHelper.show("Copied to clipboard!", ToastKind.Success);
-    }).catch(() => {
-      ToastHelper.show("Failed to copy", ToastKind.Error);
-    });
+    navigator.clipboard
+      .writeText(this.translatedText)
+      .then(() => {
+        ToastHelper.show("Copied to clipboard!", ToastKind.Success);
+      })
+      .catch(() => {
+        ToastHelper.show("Failed to copy", ToastKind.Error);
+      });
   }
 
   onThemeToggle() {
@@ -396,9 +393,11 @@ export class App implements OnInit, OnDestroy {
   }
 
   onAppLangChange() {
-    const selector = document.querySelector('[data-element-id="lang-selector"]') as any;
+    const selector = document.querySelector(
+      '[data-element-id="lang-selector"]',
+    ) as any;
     if (selector?.value) {
-      const locale = selector.value as 'en' | 'ru';
+      const locale = selector.value as "en" | "ru";
       I18nService.instance.setLocale(locale);
       GlobalStateService.instance.setAppLocale(locale);
     }
@@ -410,7 +409,9 @@ export class App implements OnInit, OnDestroy {
   }
 
   private _setOverlayOpen(open: boolean): void {
-    const overlay = document.querySelector('[data-element-id="shortcuts-el"]') as any;
+    const overlay = document.querySelector(
+      '[data-element-id="shortcuts-el"]',
+    ) as any;
     if (overlay && typeof overlay.open === "boolean") {
       overlay.open = open;
     }
@@ -468,12 +469,16 @@ export class App implements OnInit, OnDestroy {
   private emitToOutput(event: string, data?: any) {
     const output = document.getElementById("outputText");
     if (output) {
-      output.dispatchEvent(new CustomEvent(event, { detail: data, bubbles: true }));
+      output.dispatchEvent(
+        new CustomEvent(event, { detail: data, bubbles: true }),
+      );
     }
     const input = document.getElementById("inputText");
     if (input && event === "update-input") {
       (input as any).value = data;
-      input.dispatchEvent(new CustomEvent("input", { detail: { value: data }, bubbles: true }));
+      input.dispatchEvent(
+        new CustomEvent("input", { detail: { value: data }, bubbles: true }),
+      );
     }
   }
 }

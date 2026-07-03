@@ -35,7 +35,9 @@ async fn translate_text(
   let target_lang_clone = target_lang.clone();
   let window_clone = window.clone();
   tauri::async_runtime::spawn(async move {
-    let response = service.translate_async(&text_clone, &source_lang_clone, &target_lang_clone).await;
+    let response = service
+      .translate_async(&text_clone, &source_lang_clone, &target_lang_clone)
+      .await;
     if response.status == tauri_shared::Status::Error {
       log_error!("Translation failed: {}", response.message);
     }
@@ -134,8 +136,9 @@ pub fn run() {
       // Then we just pass "translator_db" as the relative path
       std::env::set_var("NOSQL_ORM_DATA_DIR", data_dir.to_string_lossy().as_ref());
       let db_path = "translator_db";
-      let provider = tauri::async_runtime::block_on(nosql_orm::providers::JsonProvider::new(db_path))
-        .expect("Failed to create JSON provider");
+      let provider =
+        tauri::async_runtime::block_on(nosql_orm::providers::JsonProvider::new(db_path))
+          .expect("Failed to create JSON provider");
 
       app.manage(provider);
       log_info!(
