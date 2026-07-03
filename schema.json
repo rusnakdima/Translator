@@ -1,0 +1,377 @@
+{
+  "version": "1.0.0",
+  "app": {
+    "id": "translator_schema",
+    "name": "translator",
+    "theme": "light",
+    "style": "material-design-v3"
+  },
+  "shortcuts": [
+    {
+      "id": "open-shortcuts",
+      "key": "F1",
+      "label": "Keyboard shortcuts",
+      "category": "general",
+      "handler": "onShortcutsOpen"
+    },
+    {
+      "id": "swap-languages",
+      "key": "l",
+      "modifiers": ["ctrl", "shift"],
+      "label": "Swap languages",
+      "category": "translation",
+      "handler": "onSwapLanguages"
+    },
+    {
+      "id": "translate",
+      "key": "Enter",
+      "modifiers": ["ctrl"],
+      "label": "Translate (Ctrl+Enter)",
+      "category": "translation",
+      "handler": "onTranslate"
+    },
+    {
+      "id": "clear",
+      "key": "Escape",
+      "label": "Clear text",
+      "category": "translation",
+      "handler": "onClearInput"
+    }
+  ],
+  "pages": [
+    {
+      "id": "translate",
+      "route": "",
+      "meta": {
+        "title": "Translator"
+      },
+      "canvasElements": [
+        {
+          "id": "page-bg",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "fullHeight": true,
+            "padding": "md",
+            "style": "background-gradient"
+          }
+        },
+        {
+          "id": "page-center",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "maxWidth": "6xl",
+            "mx": "auto"
+          }
+        },
+        {
+          "id": "header-row",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "row",
+            "align": "center",
+            "justify": "between",
+            "marginBottom": "md"
+          }
+        },
+        {
+          "id": "header-left",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "col"
+          }
+        },
+        {
+          "id": "header-title",
+          "componentId": "h1",
+          "props": {
+            "i18nKey": "app.title",
+            "size": "3xl",
+            "weight": "bold"
+          }
+        },
+        {
+          "id": "header-subtitle",
+          "componentId": "p",
+          "props": {
+            "i18nKey": "app.subtitle",
+            "size": "sm",
+            "marginTop": "xs"
+          }
+        },
+        {
+          "id": "header-right",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "row",
+            "align": "center",
+            "gap": "sm"
+          }
+        },
+        {
+          "id": "lang-selector",
+          "componentId": "app-language-selector",
+          "props": {
+            "labelId": "appLang",
+            "i18nKey": "lang.selector.label",
+            "languages": "[{\"code\":\"en\",\"name\":\"English\"},{\"code\":\"es\",\"name\":\"Spanish\"},{\"code\":\"fr\",\"name\":\"French\"},{\"code\":\"de\",\"name\":\"German\"},{\"code\":\"it\",\"name\":\"Italian\"},{\"code\":\"pt\",\"name\":\"Portuguese\"},{\"code\":\"ru\",\"name\":\"Russian\"},{\"code\":\"ja\",\"name\":\"Japanese\"},{\"code\":\"ko\",\"name\":\"Korean\"},{\"code\":\"zh\",\"name\":\"Chinese\"},{\"code\":\"ar\",\"name\":\"Arabic\"},{\"code\":\"hi\",\"name\":\"Hindi\"},{\"code\":\"nl\",\"name\":\"Dutch\"},{\"code\":\"pl\",\"name\":\"Polish\"},{\"code\":\"tr\",\"name\":\"Turkish\"}]"
+          },
+          "events": {
+            "change": [
+              {
+                "handler": "onAppLangChange"
+              }
+            ]
+          }
+        },
+        {
+          "id": "shortcuts-btn",
+          "componentId": "app-button",
+          "props": {
+            "styleName": "ghost-sm",
+            "icon": "keyboard",
+            "i18nKey": "header.shortcuts"
+          },
+          "events": {
+            "click": [
+              {
+                "handler": "onShortcutsOpen"
+              }
+            ]
+          }
+        },
+        {
+          "id": "theme-btn",
+          "componentId": "app-theme-toggle",
+          "props": {},
+          "events": {
+            "toggle": [
+              {
+                "handler": "onThemeToggle"
+              }
+            ]
+          }
+        },
+        {
+          "id": "main-card",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "col",
+            "padding": "lg",
+            "rounded": true,
+            "elevation": "high"
+          }
+        },
+        {
+          "id": "content-grid",
+          "componentId": "div",
+          "props": {
+            "layout": "grid",
+            "columns": "1fr auto 1fr",
+            "gap": "sm"
+          }
+        },
+        {
+          "id": "source-panel",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "col"
+          }
+        },
+        {
+          "id": "source-label-row",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "row",
+            "align": "center",
+            "justify": "between",
+            "marginBottom": "sm"
+          }
+        },
+        {
+          "id": "source-label",
+          "componentId": "span",
+          "props": {
+            "i18nKey": "label.from"
+          }
+        },
+        {
+          "id": "source-lang",
+          "componentId": "app-language-selector",
+          "props": {
+            "labelId": "sourceLang",
+            "languages": "[{\"code\":\"en\",\"name\":\"English\"},{\"code\":\"es\",\"name\":\"Spanish\"},{\"code\":\"fr\",\"name\":\"French\"},{\"code\":\"de\",\"name\":\"German\"},{\"code\":\"it\",\"name\":\"Italian\"},{\"code\":\"pt\",\"name\":\"Portuguese\"},{\"code\":\"ru\",\"name\":\"Russian\"},{\"code\":\"ja\",\"name\":\"Japanese\"},{\"code\":\"ko\",\"name\":\"Korean\"},{\"code\":\"zh\",\"name\":\"Chinese\"},{\"code\":\"ar\",\"name\":\"Arabic\"},{\"code\":\"hi\",\"name\":\"Hindi\"},{\"code\":\"nl\",\"name\":\"Dutch\"},{\"code\":\"pl\",\"name\":\"Polish\"},{\"code\":\"tr\",\"name\":\"Turkish\"}]"
+          },
+          "events": {
+            "change": [
+              {
+                "handler": "onSourceLangChange"
+              }
+            ]
+          }
+        },
+        {
+          "id": "source-input",
+          "componentId": "app-text-input",
+          "props": {
+            "id": "inputText",
+            "placeholder_i18n": "input.placeholder",
+            "clearable": true,
+            "maxChars": 5000
+          },
+          "events": {
+            "input": [
+              {
+                "handler": "onInputTextChange"
+              }
+            ],
+            "clear": [
+              {
+                "handler": "onClearInput"
+              }
+            ]
+          }
+        },
+        {
+          "id": "swap-area",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "align": "center",
+            "justify": "center"
+          }
+        },
+        {
+          "id": "swap-btn",
+          "componentId": "app-swap-button",
+          "props": {},
+          "events": {
+            "click": [
+              {
+                "handler": "onSwapLanguages"
+              }
+            ]
+          }
+        },
+        {
+          "id": "target-panel",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "col"
+          }
+        },
+        {
+          "id": "target-label-row",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "row",
+            "align": "center",
+            "justify": "between",
+            "marginBottom": "sm"
+          }
+        },
+        {
+          "id": "target-label",
+          "componentId": "span",
+          "props": {
+            "i18nKey": "label.to"
+          }
+        },
+        {
+          "id": "target-lang-wrap",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "direction": "row",
+            "align": "center",
+            "gap": "sm"
+          }
+        },
+        {
+          "id": "target-lang",
+          "componentId": "app-language-selector",
+          "props": {
+            "labelId": "targetLang",
+            "languages": "[{\"code\":\"en\",\"name\":\"English\"},{\"code\":\"es\",\"name\":\"Spanish\"},{\"code\":\"fr\",\"name\":\"French\"},{\"code\":\"de\",\"name\":\"German\"},{\"code\":\"it\",\"name\":\"Italian\"},{\"code\":\"pt\",\"name\":\"Portuguese\"},{\"code\":\"ru\",\"name\":\"Russian\"},{\"code\":\"ja\",\"name\":\"Japanese\"},{\"code\":\"ko\",\"name\":\"Korean\"},{\"code\":\"zh\",\"name\":\"Chinese\"},{\"code\":\"ar\",\"name\":\"Arabic\"},{\"code\":\"hi\",\"name\":\"Hindi\"},{\"code\":\"nl\",\"name\":\"Dutch\"},{\"code\":\"pl\",\"name\":\"Polish\"},{\"code\":\"tr\",\"name\":\"Turkish\"}]"
+          },
+          "events": {
+            "change": [
+              {
+                "handler": "onTargetLangChange"
+              }
+            ]
+          }
+        },
+        {
+          "id": "target-output",
+          "componentId": "app-translation-output",
+          "props": {
+            "id": "outputText",
+            "placeholder_i18n": "output.placeholder"
+          },
+          "events": {
+            "copy": [
+              {
+                "handler": "onCopyTranslation"
+              }
+            ]
+          }
+        },
+        {
+          "id": "translate-row",
+          "componentId": "div",
+          "props": {
+            "layout": "flex",
+            "justify": "center",
+            "marginTop": "md"
+          }
+        },
+        {
+          "id": "translate-btn",
+          "componentId": "app-button",
+          "props": {
+            "styleName": "solid",
+            "i18nKey": "button.translate"
+          },
+          "events": {
+            "click": [
+              {
+                "handler": "onTranslate"
+              }
+            ]
+          }
+        },
+        {
+          "id": "footer-row",
+          "componentId": "footer",
+          "props": {
+            "marginTop": "xl",
+            "align": "center"
+          }
+        },
+        {
+          "id": "footer-text",
+          "componentId": "p",
+          "props": {
+            "i18nKey": "footer.text"
+          }
+        },
+        {
+          "id": "shortcuts-el",
+          "componentId": "app-shortcuts-overlay",
+          "props": {}
+        }
+      ]
+    }
+  ],
+  "layouts": []
+}
