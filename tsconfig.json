@@ -21,8 +21,8 @@
       "@core/*": ["src/app/core/*"],
       "@app/*": ["src/app/*"],
       "@tauri-shared/*": ["../_shared/*"],
-      "@tauri-front/shared": ["../../Web/tauri-front-shared/projects/shared/dist"],
-      "@tauri-front/shared/*": ["../../Web/tauri-front-shared/projects/shared/dist/*"]
+      "@tauri-front/shared": ["../tauri-front-shared/projects/shared/dist"],
+      "@tauri-front/shared/*": ["../tauri-front-shared/projects/shared/dist/*"]
     }
   },
   "angularCompilerOptions": {

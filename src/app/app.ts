@@ -448,8 +448,13 @@ export class App implements OnInit, OnDestroy {
   }
 
   private _applyThemeState() {
-    // Persist dark mode preference
     const isDark = this.themeService.isDarkMode();
+    const html = document.documentElement;
+    if (isDark) {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
     localStorage.setItem("dark_mode", String(isDark));
   }
 
