@@ -8,12 +8,17 @@ use tauri_shared::{log_error, log_info, Response};
 #[serde(rename_all = "camelCase")]
 pub struct UiSchema {
   pub id: String,
+  #[serde(alias = "schemaVersion")]
   pub version: String,
   pub app: serde_json::Value,
   pub pages: Vec<serde_json::Value>,
   pub layouts: Vec<serde_json::Value>,
   #[serde(default)]
   pub shortcuts: Vec<serde_json::Value>,
+  #[serde(default)]
+  pub handlers: serde_json::Value,
+  #[serde(default)]
+  pub stores: serde_json::Value,
 }
 
 impl Entity for UiSchema {

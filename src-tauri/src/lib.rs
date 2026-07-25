@@ -5,13 +5,11 @@ mod entities;
 mod helpers;
 mod models;
 mod services;
-use entities::{TranslationHistoryEntry, UserSettings};
 use models::translation_model::LanguagesResponse;
-use nosql_orm::prelude::Repository;
 use services::translation_service::TranslationService;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use tauri::{Emitter, Manager, State, Window};
-use tauri_shared::{log_error, log_info, AppError, Response};
+use tauri_shared::{log_error, log_info, Response};
 static REQUEST_ID: AtomicUsize = AtomicUsize::new(0);
 const TAURI_EVENT_TRANSLATION_RESULT: &str = "translation-result";
 #[tauri::command]
@@ -53,65 +51,29 @@ async fn translate_text(
   });
   Ok(request_id)
 }
-#[tauri::command]
-async fn get_settings(
-  db: State<'_, nosql_orm::providers::JsonProvider>,
-) -> tauri_shared::Result<Response<UserSettings>> {
-  let repo: Repository<UserSettings, _> = Repository::new(db.inner().clone());
-  match repo.find_by_id("user_preferences").await {
-    Ok(Some(settings)) => Ok(Response::success(settings, None)),
-    Ok(None) => Ok(Response::success(
-      UserSettings {
-        id: Some("user_preferences".to_string()),
-        source_lang: "en".to_string(),
-        target_lang: "es".to_string(),
-      },
-      None,
-    )),
-    Err(e) => Err(AppError::from(e)),
-  }
-}
-#[tauri::command]
-async fn save_settings(
-  db: State<'_, nosql_orm::providers::JsonProvider>,
-  settings: UserSettings,
-) -> tauri_shared::Result<Response<()>> {
-  let repo: Repository<UserSettings, _> = Repository::new(db.inner().clone());
-  repo.save(settings).await.map_err(AppError::from)?;
-  Ok(Response::success((), Some("Settings saved")))
-}
-#[tauri::command]
-async fn save_translation(
-  db: State<'_, nosql_orm::providers::JsonProvider>,
-  entry: TranslationHistoryEntry,
-) -> tauri_shared::Result<Response<()>> {
-  let repo: Repository<TranslationHistoryEntry, _> = Repository::new(db.inner().clone());
-  repo.save(entry).await.map_err(AppError::from)?;
-  Ok(Response::success((), Some("Translation saved")))
-}
-#[tauri::command]
-async fn get_translation_history(
-  db: State<'_, nosql_orm::providers::JsonProvider>,
-) -> tauri_shared::Result<Response<Vec<TranslationHistoryEntry>>> {
-  let repo: Repository<TranslationHistoryEntry, _> = Repository::new(db.inner().clone());
-  repo
-    .find_all()
-    .await
-    .map(|entries| Response::success(entries, None))
-    .map_err(AppError::from)
-}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
+    .plugin(
+      tauri_plugin_log::Builder::new()
+        .format(|out, message, record| {
+          out.finish(format_args!(
+            "[{}] [{}] [{}] [{}] {}",
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"),
+            record.level(),
+            "translator",
+            record.target(),
+            message
+          ))
+        })
+        .build(),
+    )
     .plugin(tauri_plugin_opener::init())
     .plugin(tauri_plugin_mcp_bridge::init())
     .invoke_handler(tauri::generate_handler![
       get_supported_languages,
       translate_text,
-      get_settings,
-      save_settings,
-      save_translation,
-      get_translation_history,
       tauri_shared::commands::logger_commands::get_log_entries,
       tauri_shared::commands::logger_commands::set_log_level,
       tauri_shared::commands::logger_commands::clear_logs,
@@ -119,12 +81,11 @@ pub fn run() {
       commands::save_schema,
       commands::get_all_schemas,
       commands::delete_schema,
-      // Algorithm commands from tauri-shared
-      tauri_shared::commands::algorithm_commands::quick_sort,
-      tauri_shared::commands::algorithm_commands::merge_sort,
-      tauri_shared::commands::algorithm_commands::bubble_sort,
-      tauri_shared::commands::algorithm_commands::insertion_sort,
-      tauri_shared::commands::algorithm_commands::dijkstra,
+      // Algorithm commands from tauri-shared (registry pattern)
+      tauri_shared::commands::algorithm_commands::execute_algorithm,
+      tauri_shared::commands::algorithm_commands::list_algorithms,
+      // Unified CRUD commands (replaces get_settings, save_settings, get_translation_history, save_translation)
+      tauri_shared::commands::crud_commands::crud_execute,
     ])
     .manage(TranslationService::default())
     .setup(|app| {

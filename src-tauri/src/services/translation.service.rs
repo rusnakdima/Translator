@@ -35,7 +35,7 @@ impl TranslationService {
           source_lang: source_lang.to_string(),
           target_lang: target_lang.to_string(),
         };
-        return Response::error_with_data(&format!("Translation failed: {}", e), data);
+        return Response::error_with_data(data, &format!("Translation failed: {}", e));
       }
     };
     let data = TranslationResponse {
