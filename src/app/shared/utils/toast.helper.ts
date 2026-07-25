@@ -1,11 +1,11 @@
-import { EventBusService } from "@tauri-front/shared";
+import { ToastService } from "@tauri-front/shared";
 import { ToastType, ToastKind } from "@shared/utils/constants";
 
 export class ToastHelper {
-  private static eventBus: EventBusService | null = null;
+  private static toastService: ToastService | null = null;
 
-  static setEventBus(bus: EventBusService) {
-    ToastHelper.eventBus = bus;
+  static setToastService(service: ToastService) {
+    ToastHelper.toastService = service;
   }
 
   static show(
@@ -13,10 +13,13 @@ export class ToastHelper {
     type: ToastType = ToastKind.Info,
     duration: number = 3000,
   ): void {
-    if (ToastHelper.eventBus) {
-      ToastHelper.eventBus.showToast(message, type as any, duration);
+    if (ToastHelper.toastService) {
+      const svc = ToastHelper.toastService;
+      if (type === "success") svc.success(message, { duration });
+      else if (type === "error") svc.error(message, { duration });
+      else svc.info(message, { duration });
     } else {
-      window.showToast?.(message, type as any, duration);
+      window.showToast?.(message, type);
     }
   }
 }
