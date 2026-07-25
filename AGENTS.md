@@ -6,7 +6,7 @@ This document is the primary source of truth for agentic coding agents operating
 
 - **Framework:** Tauri v2 (Rust backend + Angular frontend)
 - **Tauri:** v2.10
-- **Angular:** v20.1.4
+- **Angular:** v22.0.6
 - **Package Manager:** npm/bun
 - **Rust Edition:** 2021
 - **Key Dependencies:** `tauri-plugin-opener`, `serde`, `serde_json`, `chrono`, `dirs`, `paste`
