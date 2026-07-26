@@ -1,5 +1,3 @@
-export type ToastType = "info" | "success" | "error";
-
 export const TAURI_EVENTS = {
   translationResult: "translation-result",
 } as const;
@@ -8,6 +6,8 @@ export const RESPONSE_STATUS = {
   error: "error",
   success: "success",
 } as const;
+
+export type ToastType = "info" | "success" | "error";
 
 export const ToastKind = {
   Info: "info",

@@ -4,8 +4,8 @@
   "version": "0.5.2",
   "identifier": "com.tcs.translator",
   "build": {
-    "beforeDevCommand": "bun run start",
-    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:5174",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist/translator/browser"
   },
