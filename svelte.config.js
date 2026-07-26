@@ -6,6 +6,9 @@ export default {
   kit: {
     adapter: adapter({
       fallback: 'index.html'
-    })
+    }),
+    alias: {
+      '$lib': 'src/lib'
+    }
   }
 };

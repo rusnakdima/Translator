@@ -1,1 +1,6 @@
 @import "tailwindcss";
+
+/* Configure dark mode to use 'class' strategy (not media query) */
+@theme {
+  --tw-dark: class;
+}
