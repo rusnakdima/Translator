@@ -12,11 +12,7 @@
     "module": "ESNext",
     "target": "ESNext",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["svelte"],
-    "baseUrl": ".",
-    "paths": {
-      "$lib/*": ["src/lib/*"]
-    }
+    "types": ["svelte"]
   },
   "include": ["src/**/*.ts", "src/**/*.svelte"],
   "exclude": ["node_modules"]
