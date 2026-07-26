@@ -1,7 +1,11 @@
 import { ToastKind, type ToastType } from "./constants";
 
 export class ToastHelper {
-  private static toastService: { info: (msg: string, opts?: { duration?: number }) => void; success: (msg: string, opts?: { duration?: number }) => void; error: (msg: string, opts?: { duration?: number }) => void } | null = null;
+  private static toastService: {
+    info: (msg: string, opts?: { duration?: number }) => void;
+    success: (msg: string, opts?: { duration?: number }) => void;
+    error: (msg: string, opts?: { duration?: number }) => void;
+  } | null = null;
 
   static setToastService(service: typeof ToastHelper.prototype.toastService) {
     ToastHelper.toastService = service;
@@ -18,7 +22,11 @@ export class ToastHelper {
       else if (type === "error") svc.error(message, { duration });
       else svc.info(message, { duration });
     } else {
-      (window as Window & { showToast?: (msg: string, type: ToastType) => void }).showToast?.(message, type);
+      (
+        window as Window & {
+          showToast?: (msg: string, type: ToastType) => void;
+        }
+      ).showToast?.(message, type);
     }
   }
 }

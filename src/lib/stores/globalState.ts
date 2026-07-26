@@ -7,9 +7,9 @@ export const appLocale = writable<"en" | "ru">("en");
 export function swapLanguages(): void {
   let source: string;
   let target: string;
-  sourceLang.subscribe(v => source = v)();
-  targetLang.subscribe(v => target = v)();
-  
+  sourceLang.subscribe((v) => (source = v))();
+  targetLang.subscribe((v) => (target = v))();
+
   sourceLang.set(target);
   targetLang.set(source);
 }

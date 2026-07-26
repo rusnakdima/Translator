@@ -18,16 +18,16 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2.10", features = ["devtools"] }
+tauri = { version = "~2.11", features = ["devtools"] }
 tauri-plugin-log = "2"
 tauri-plugin-opener = "2"
-tauri-plugin-mcp-bridge = "0.11.2"
+tauri-plugin-mcp-bridge = "0.11"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-chrono = "0.4"
+once_cell = "1"
 tokio = { version = "1", features = ["full"] }
+chrono = "0.4"
 tauri-shared = { path = "/home/dmitriy/Projects/tauri-shared", features = ["algorithms"] }
 nosql_orm = { path = "/home/dmitriy/Projects/nosql_orm", features = ["json"] }
 trad = "0.1"
-once_cell = "1"
 

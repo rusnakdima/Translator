@@ -28,7 +28,9 @@ export interface TranslationResultPayload {
 const maxChars = 5000;
 
 export async function getSupportedLanguages(): Promise<Language[]> {
-  const response = await invoke<Response<LanguagesResponse>>("get_supported_languages");
+  const response = await invoke<Response<LanguagesResponse>>(
+    "get_supported_languages",
+  );
   if (!response.data) {
     throw new Error(response.message || "Failed to load languages");
   }
@@ -42,7 +44,7 @@ export function getMaxChars(): number {
 export async function translateText(
   text: string,
   sourceLang: string,
-  targetLang: string
+  targetLang: string,
 ): Promise<number> {
   return await invoke<number>("translate_text", {
     text,
@@ -52,9 +54,12 @@ export async function translateText(
 }
 
 export async function listenForTranslationResult(
-  callback: (payload: TranslationResultPayload) => void
+  callback: (payload: TranslationResultPayload) => void,
 ): Promise<UnlistenFn> {
-  return await listen<TranslationResultPayload>(TAURI_EVENTS.translationResult, (event) => {
-    callback(event.payload);
-  });
+  return await listen<TranslationResultPayload>(
+    TAURI_EVENTS.translationResult,
+    (event) => {
+      callback(event.payload);
+    },
+  );
 }
