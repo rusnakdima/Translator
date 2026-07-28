@@ -82,7 +82,7 @@ pub fn run() {
       commands::get_all_schemas,
       commands::delete_schema,
       // Algorithm commands from tauri-shared (registry pattern)
-      tauri_shared::commands::algorithm_commands::execute_algorithm,
+      tauri_shared::commands::algorithm_commands::algo_execute,
       tauri_shared::commands::algorithm_commands::list_algorithms,
       // Unified CRUD commands (replaces get_settings, save_settings, get_translation_history, save_translation)
       tauri_shared::commands::crud_commands::crud_execute,

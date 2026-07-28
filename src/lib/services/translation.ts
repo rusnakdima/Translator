@@ -1,5 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { ipcService } from "@tauri-front/shared";
 import { TAURI_EVENTS } from "$lib/utils/constants";
 
 export interface Language {
@@ -28,7 +28,7 @@ export interface TranslationResultPayload {
 const maxChars = 5000;
 
 export async function getSupportedLanguages(): Promise<Language[]> {
-  const response = await invoke<Response<LanguagesResponse>>(
+  const response = await ipcService.invoke<Response<LanguagesResponse>>(
     "get_supported_languages",
   );
   if (!response.data) {
@@ -46,7 +46,7 @@ export async function translateText(
   sourceLang: string,
   targetLang: string,
 ): Promise<number> {
-  return await invoke<number>("translate_text", {
+  return await ipcService.invoke<number>("translate_text", {
     text,
     sourceLang,
     targetLang,
