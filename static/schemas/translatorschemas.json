@@ -1,0 +1,575 @@
+{
+  "id": "translator",
+  "schemaVersion": "1.0.0",
+  "app": {
+    "id": "translator",
+    "name": "Translator",
+    "style": "material-design-v3",
+    "settings": {
+      "defaultLocale": "en"
+    }
+  },
+  "pages": [
+    {
+      "id": "translate-page",
+      "name": "Translate",
+      "route": "/",
+      "layoutMode": "default",
+      "meta": {
+        "title": "Translator",
+        "icon": "translate",
+        "breadcrumb": ["Translator", "Translate"]
+      },
+      "canvasElements": [
+        {
+          "id": "page-background",
+          "componentId": "app-div",
+          "classes": "fixed inset-0 -z-10 pointer-events-none bg-gradient-to-br from-primary-container/30 via-surface to-primary-container/30 dark:from-surface-container-lowest dark:via-surface-container dark:to-surface-container-lowest"
+        },
+        {
+          "id": "content-wrapper",
+          "componentId": "app-div",
+          "classes": "mx-auto max-w-6xl w-full flex flex-col gap-6",
+          "children": [
+            {
+              "id": "glass-card",
+              "componentId": "app-div",
+              "classes": "rounded-2xl p-6 md:p-8 shadow-lg backdrop-blur-lg bg-surface-container dark:bg-surface-container-low border border-outline-variant dark:border-outline-variant flex flex-col gap-6",
+              "children": [
+                {
+                  "id": "lang-row",
+                  "componentId": "app-div",
+                  "classes": "flex flex-row items-center gap-3 w-full",
+                  "children": [
+                    {
+                      "id": "source-lang-selector",
+                      "componentId": "app-language-selector",
+                      "classes": "w-full flex-1 min-w-0",
+                      "props": {
+                        "label": "From",
+                        "placeholder": "Source language",
+                        "value": "en",
+                        "languages": [
+                          { "code": "auto", "name": "Detect language" },
+                          { "code": "en", "name": "English" },
+                          { "code": "ru", "name": "Russian" },
+                          { "code": "es", "name": "Spanish" },
+                          { "code": "fr", "name": "French" },
+                          { "code": "de", "name": "German" },
+                          { "code": "zh", "name": "Chinese" },
+                          { "code": "ja", "name": "Japanese" },
+                          { "code": "ko", "name": "Korean" },
+                          { "code": "it", "name": "Italian" },
+                          { "code": "pt", "name": "Portuguese" },
+                          { "code": "ar", "name": "Arabic" }
+                        ]
+                      },
+                      "events": { "changed": "setSourceLanguage" },
+                      "bind": { "store": "translator", "field": "sourceLang" }
+                    },
+                    {
+                      "id": "swap-button",
+                      "componentId": "app-swap-button",
+                      "classes": "flex-shrink-0",
+                      "props": { "ariaLabel": "Swap source and target languages" },
+                      "events": { "clicked": "swapLanguages" }
+                    },
+                    {
+                      "id": "target-lang-selector",
+                      "componentId": "app-language-selector",
+                      "classes": "w-full flex-1 min-w-0",
+                      "props": {
+                        "label": "To",
+                        "placeholder": "Target language",
+                        "value": "ru",
+                        "languages": [
+                          { "code": "en", "name": "English" },
+                          { "code": "ru", "name": "Russian" },
+                          { "code": "es", "name": "Spanish" },
+                          { "code": "fr", "name": "French" },
+                          { "code": "de", "name": "German" },
+                          { "code": "zh", "name": "Chinese" },
+                          { "code": "ja", "name": "Japanese" },
+                          { "code": "ko", "name": "Korean" },
+                          { "code": "it", "name": "Italian" },
+                          { "code": "pt", "name": "Portuguese" },
+                          { "code": "ar", "name": "Arabic" }
+                        ]
+                      },
+                      "events": { "changed": "setTargetLanguage" },
+                      "bind": { "store": "translator", "field": "targetLang" }
+                    }
+                  ]
+                },
+                {
+                  "id": "content-row",
+                  "componentId": "app-div",
+                  "classes": "grid grid-cols-1 md:grid-cols-2 gap-4 w-full",
+                  "children": [
+                    {
+                      "id": "source-input",
+                      "componentId": "app-text-input",
+                      "classes": "w-full",
+                      "props": {
+                        "rows": 8,
+                        "placeholder": "Enter text to translate...",
+                        "label": "Source text",
+                        "autoResize": true,
+                        "showCharCount": true,
+                        "maxLength": 5000,
+                        "showClear": true
+                      },
+                      "events": {
+                        "input": "setSourceText",
+                        "textChange": "setSourceText",
+                        "cleared": "clearAll"
+                      },
+                      "bind": { "store": "translator", "field": "sourceText" }
+                    },
+                    {
+                      "id": "translation-output",
+                      "componentId": "app-translation-output",
+                      "classes": "w-full",
+                      "props": {
+                        "loading": false,
+                        "placeholder": "Translation will appear here...",
+                        "showConfidence": true,
+                        "showCopy": true
+                      },
+                      "bind": { "store": "translator", "field": "translatedText" },
+                      "events": { "copied": "copyTranslation" }
+                    }
+                  ]
+                },
+                {
+                  "id": "translate-btn-row",
+                  "componentId": "app-div",
+                  "classes": "flex justify-center w-full pt-2",
+                  "children": [
+                    {
+                      "id": "translate-button",
+                      "componentId": "app-button",
+                      "classes": "w-full max-w-xs shadow-md hover:shadow-primary/20",
+                      "props": {
+                        "label": "Translate",
+                        "icon": "translate",
+                        "variant": "primary"
+                      },
+                      "events": { "clicked": "translateText" }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "settings-page",
+      "name": "Settings",
+      "route": "/settings",
+      "layoutMode": "default",
+      "meta": {
+        "title": "Settings",
+        "icon": "settings",
+        "breadcrumb": ["Translator", "Settings"]
+      },
+      "canvasElements": [
+        {
+          "id": "settings-header",
+          "componentId": "app-header",
+          "classes": "w-full mb-6",
+          "props": {
+            "title": "Settings",
+            "subtitle": "Configure your Translator experience",
+            "icon": "settings"
+          }
+        },
+        {
+          "id": "settings-preferences-card",
+          "componentId": "app-card",
+          "classes": "w-full",
+          "props": {
+            "title": "Preferences",
+            "subtitle": "Toggle translator behavior",
+            "padding": "lg",
+            "elevation": 1
+          },
+          "children": [
+            {
+              "id": "auto-translate-setting",
+              "componentId": "app-switch",
+              "props": { "label": "Auto-translate on input" },
+              "events": { "changed": "setAutoTranslate" },
+              "bind": { "store": "translator-settings", "field": "autoTranslate" }
+            },
+            {
+              "id": "show-confidence-setting",
+              "componentId": "app-switch",
+              "props": { "label": "Show confidence score" },
+              "events": { "changed": "setShowConfidence" },
+              "bind": { "store": "translator-settings", "field": "showConfidence" }
+            },
+            {
+              "id": "remember-languages-setting",
+              "componentId": "app-switch",
+              "props": { "label": "Remember last used languages" },
+              "events": { "changed": "setRememberLanguages" },
+              "bind": { "store": "translator-settings", "field": "rememberLanguages" }
+            },
+            {
+              "id": "dark-mode-setting",
+              "componentId": "app-switch",
+              "props": { "label": "Dark mode" },
+              "events": { "changed": "setDarkMode" },
+              "bind": { "store": "translator-settings", "field": "darkMode" }
+            }
+          ]
+        },
+        {
+          "id": "settings-shortcuts-card",
+          "componentId": "app-card",
+          "classes": "w-full",
+          "props": {
+            "title": "Keyboard Shortcuts",
+            "subtitle": "All available shortcuts in the app",
+            "padding": "lg",
+            "elevation": 1
+          },
+          "children": [
+            {
+              "id": "shortcuts-list",
+              "componentId": "app-list",
+              "props": {
+                "items": [
+                  { "label": "Translate", "value": "Ctrl+Enter" },
+                  { "label": "Swap languages", "value": "Ctrl+Shift+S" },
+                  { "label": "Clear text", "value": "Ctrl+K" },
+                  { "label": "Copy translation", "value": "Ctrl+Shift+C" },
+                  { "label": "Open settings", "value": "Ctrl+," },
+                  { "label": "Show shortcuts", "value": "?" }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "settings-about-card",
+          "componentId": "app-card",
+          "classes": "w-full",
+          "props": { "title": "About", "padding": "lg", "elevation": 1 },
+          "children": [
+            {
+              "id": "about-version",
+              "componentId": "app-div",
+              "props": { "text": "Translator v1.0.0 - Built with Tauri + Angular + SDUI" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shortcuts-page",
+      "name": "Keyboard Shortcuts",
+      "route": "/shortcuts",
+      "layoutMode": "default",
+      "meta": {
+        "title": "Keyboard Shortcuts",
+        "icon": "keyboard",
+        "breadcrumb": ["Translator", "Shortcuts"]
+      },
+      "canvasElements": [
+        {
+          "id": "shortcuts-header",
+          "componentId": "app-header",
+          "classes": "w-full mb-6",
+          "props": {
+            "title": "Keyboard Shortcuts",
+            "subtitle": "Speed up your workflow",
+            "icon": "keyboard"
+          }
+        },
+        {
+          "id": "shortcuts-card",
+          "componentId": "app-card",
+          "classes": "w-full",
+          "props": {
+            "title": "All Shortcuts",
+            "subtitle": "Reference table of every available shortcut",
+            "padding": "lg",
+            "elevation": 1
+          },
+          "children": [
+            {
+              "id": "shortcuts-list-full",
+              "componentId": "app-list",
+              "props": {
+                "items": [
+                  { "label": "Translate", "value": "Ctrl+Enter" },
+                  { "label": "Swap languages", "value": "Ctrl+Shift+S" },
+                  { "label": "Clear text", "value": "Ctrl+K" },
+                  { "label": "Copy translation", "value": "Ctrl+Shift+C" },
+                  { "label": "Open settings", "value": "Ctrl+," },
+                  { "label": "Show shortcuts", "value": "?" },
+                  { "label": "Quick paste", "value": "Ctrl+Shift+V" },
+                  { "label": "Focus source input", "value": "Ctrl+Shift+S" },
+                  { "label": "Close overlay", "value": "Escape" }
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "not-found-page",
+      "name": "Not Found",
+      "route": "/404",
+      "layoutMode": "default",
+      "meta": {
+        "title": "Page Not Found",
+        "icon": "error_outline"
+      },
+      "canvasElements": [
+        {
+          "id": "not-found-content",
+          "componentId": "app-card",
+          "classes": "max-w-md mx-auto mt-20 text-center",
+          "props": {
+            "title": "404",
+            "subtitle": "Page not found",
+            "padding": "lg"
+          },
+          "children": [
+            {
+              "id": "not-found-message",
+              "componentId": "app-div",
+              "classes": "text-on-surface-variant",
+              "props": { "text": "The page you are looking for does not exist." }
+            },
+            {
+              "id": "not-found-home-btn",
+              "componentId": "app-button",
+              "props": { "label": "Go Home", "icon": "home", "variant": "primary" },
+              "events": { "clicked": "navigateHome" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "schema-error-page",
+      "name": "Schema Error",
+      "route": "/schema-error",
+      "layoutMode": "default",
+      "meta": {
+        "title": "Schema Error",
+        "icon": "error"
+      },
+      "canvasElements": [
+        {
+          "id": "schema-error-content",
+          "componentId": "app-card",
+          "classes": "max-w-md mx-auto mt-20 text-center",
+          "props": {
+            "title": "Schema Error",
+            "subtitle": "Failed to load application schema",
+            "padding": "lg"
+          },
+          "children": [
+            {
+              "id": "schema-error-message",
+              "componentId": "app-div",
+              "classes": "text-on-surface-variant",
+              "props": { "text": "The application schema could not be loaded. Please try again." }
+            },
+            {
+              "id": "schema-error-retry-btn",
+              "componentId": "app-button",
+              "props": { "label": "Retry", "icon": "refresh", "variant": "primary" },
+              "events": { "clicked": "retryLoad" }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "layoutRegions": [
+    {
+      "id": "header-region",
+      "componentId": "app-header",
+      "props": {
+        "layout": "flex",
+        "direction": "row",
+        "align": "center",
+        "justify": "between",
+        "gap": "lg",
+        "padding": "md",
+        "width": "full"
+      },
+      "routes": { "include": ["*"] },
+      "children": [
+        {
+          "id": "header-left",
+          "componentId": "app-div",
+          "classes": "flex flex-row items-center gap-4",
+          "routes": { "include": ["*"] },
+          "children": [
+            {
+              "id": "header-app-header",
+              "componentId": "app-header",
+              "props": { "title": "Translator", "icon": "translate" },
+              "routes": { "include": ["*"] }
+            }
+          ]
+        },
+        {
+          "id": "header-right",
+          "componentId": "app-div",
+          "classes": "flex flex-row items-center gap-2",
+          "routes": { "include": ["*"] },
+          "children": [
+            {
+              "id": "shortcuts-btn",
+              "componentId": "app-button",
+              "props": { "icon": "keyboard", "variant": "ghost", "ariaLabel": "Show keyboard shortcuts" },
+              "routes": { "include": ["*"] },
+              "events": { "clicked": "openShortcutsOverlay" }
+            },
+            {
+              "id": "locale-switcher",
+              "componentId": "app-locale-switcher",
+              "props": {},
+              "defaults": { "size": "sm", "variant": "ghost" },
+              "routes": { "include": ["*"] }
+            },
+            {
+              "id": "theme-toggle",
+              "componentId": "app-theme-toggle",
+              "props": {},
+              "routes": { "include": ["*"] }
+            },
+            {
+              "id": "settings-btn",
+              "componentId": "app-button",
+              "props": { "icon": "settings", "variant": "ghost", "ariaLabel": "Open settings" },
+              "defaults": { "size": "md" },
+              "routes": { "include": ["*"] },
+              "events": { "clicked": "navigateSettings" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shortcuts-overlay-region",
+      "componentId": "app-shortcuts-overlay",
+      "classes": "fixed bottom-6 right-6 z-50",
+      "props": {
+        "trigger": "?",
+        "title": "Keyboard Shortcuts",
+        "position": "bottom-right"
+      },
+      "routes": { "include": ["*"] },
+      "defaults": {
+        "shortcuts": [
+          { "key": "Ctrl+Enter", "description": "Translate" },
+          { "key": "Ctrl+Shift+S", "description": "Swap languages" },
+          { "key": "Ctrl+K", "description": "Clear text" },
+          { "key": "Ctrl+Shift+C", "description": "Copy translation" },
+          { "key": "Ctrl+,", "description": "Open settings" },
+          { "key": "?", "description": "Show shortcuts" }
+        ]
+      }
+    }
+  ],
+  "handlers": {
+    "translateText": {
+      "invoke": "translate_text",
+      "args": [
+        "$store.translator.sourceText",
+        "$store.translator.sourceLang",
+        "$store.translator.targetLang"
+      ],
+      "awaitEvent": "translation-result",
+      "resultTo": "$store.translator.translatedText"
+    },
+    "swapLanguages": {
+      "swap": ["$store.translator.sourceLang", "$store.translator.targetLang"]
+    },
+    "setSourceText": {
+      "set": { "store": "translator", "field": "sourceText", "from": "$event" }
+    },
+    "setSourceLanguage": {
+      "set": { "store": "translator", "field": "sourceLang", "from": "$event" }
+    },
+    "setTargetLanguage": {
+      "set": { "store": "translator", "field": "targetLang", "from": "$event" }
+    },
+    "clearAll": {
+      "setMany": {
+        "$store.translator.sourceText": "",
+        "$store.translator.translatedText": ""
+      }
+    },
+    "copyTranslation": {
+      "copyToClipboard": "$store.translator.translatedText"
+    },
+    "openShortcutsOverlay": {
+      "openOverlay": "shortcuts-overlay-region"
+    },
+    "setAutoTranslate": {
+      "set": { "store": "translator-settings", "field": "autoTranslate", "from": "$event" }
+    },
+    "setShowConfidence": {
+      "set": { "store": "translator-settings", "field": "showConfidence", "from": "$event" }
+    },
+    "setRememberLanguages": {
+      "set": { "store": "translator-settings", "field": "rememberLanguages", "from": "$event" }
+    },
+    "setDarkMode": {
+      "call": "toggleThemeDark"
+    },
+    "maybeAutoTranslate": {
+      "guard": "$store.translator-settings.autoTranslate",
+      "then": "translateText"
+    },
+    "navigateSettings": {
+      "navigate": "/settings"
+    },
+    "navigateHome": {
+      "navigate": "/"
+    },
+    "retryLoad": {
+      "call": "reloadSchema"
+    }
+  },
+  "stores": {
+    "translator": {
+      "initial": {
+        "sourceLang": "en",
+        "targetLang": "ru",
+        "sourceText": "",
+        "translatedText": "",
+        "loading": false,
+        "lastRequestId": null,
+        "confidence": null
+      }
+    },
+    "translator-settings": {
+      "initial": {
+        "autoTranslate": false,
+        "showConfidence": true,
+        "rememberLanguages": true,
+        "darkMode": false
+      }
+    },
+    "supportedLanguages": {
+      "initial": {
+        "loaded": false,
+        "languages": []
+      }
+    }
+  }
+}

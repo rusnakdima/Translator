@@ -4,9 +4,9 @@ This document is the primary source of truth for agentic coding agents operating
 
 ## 1. Project Overview
 
-- **Framework:** Tauri v2 (Rust backend + Angular frontend)
+- **Framework:** Tauri v2 (Rust backend + Svelte frontend)
 - **Tauri:** v2.10
-- **Angular:** v22.0.6
+- **Svelte:** v4.0.0
 - **Package Manager:** npm/bun
 - **Rust Edition:** 2021
 - **Key Dependencies:** `tauri-plugin-opener`, `serde`, `serde_json`, `chrono`, `dirs`, `paste`
@@ -16,7 +16,7 @@ This document is the primary source of truth for agentic coding agents operating
 ### Development
 
 - **Start Dev Environment:** `bun run tauri:dev`
-- **Start Angular Only:** `bun run start` (available at http://localhost:1420)
+- **Start Svelte Only:** `bun run dev` (available at http://localhost:5174)
 
 ### Build Commands (CORRECT)
 
@@ -24,7 +24,7 @@ This document is the primary source of truth for agentic coding agents operating
 - **Rust Build:** `cargo build --manifest-path src-tauri/Cargo.toml` (only for actual builds)
 - **Rust Build Release:** `cargo build --release --manifest-path src-tauri/Cargo.toml`
 - **Build Application:** `bun run tauri:build`
-- **Build Angular Only:** `bun run build`
+- **Build Svelte Only:** `bun run build`
 
 ### Verification
 
@@ -130,9 +130,9 @@ fn my_command(...) -> Result<Response<MyData>, String> {
 
 ---
 
-## 4. Frontend (Angular) Standards
+## 4. Frontend (Svelte) Standards
 
-Located in `src/app/`.
+Located in `src/`.
 
 ### Directory Structure
 
