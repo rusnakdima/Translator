@@ -27,7 +27,7 @@ serde_json = "1"
 once_cell = "1"
 tokio = { version = "1", features = ["full"] }
 chrono = "0.4"
-tauri-shared = { path = "/home/dmitriy/Projects/tauri-shared", features = ["algorithms"] }
-nosql_orm = { path = "/home/dmitriy/Projects/nosql_orm", features = ["json"] }
+tauri-shared = { path = "../../tauri-shared", features = ["algorithms"] }
+nosql_orm = { path = "../../nosql_orm", features = ["json"] }
 trad = "0.1"
 
