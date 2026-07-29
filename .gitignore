@@ -49,3 +49,6 @@ RELEASE.md
 Thumbs.db
 
 /**/.env*
+# SvelteKit
+.svelte-kit/
+build/
