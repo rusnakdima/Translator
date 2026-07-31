@@ -1,0 +1,71 @@
+[package]
+name = "translator"
+version = "0.5.2"
+edition = "2021"
+description = "A Dioxus-based Translator Application with Schema-Driven UI"
+
+[[bin]]
+name = "translator"
+path = "src/main.rs"
+
+[dependencies]
+# Dioxus core
+dioxus = { version = "0.8.0-alpha.0", features = ["desktop", "html", "hooks", "signals", "macro", "lib", "router"] }
+dioxus-desktop = { version = "0.8.0-alpha.0", default-features = false, features = ["devtools", "dioxus-signals"] }
+dioxus-core = "0.8.0-alpha.0"
+dioxus-signals = "0.8.0-alpha.0"
+dioxus-html = "0.8.0-alpha.0"
+dioxus-router = "0.8.0-alpha.0"
+
+# Shared library - pure Rust business logic (schema-driven UI)
+dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui"] }
+
+# MCP Bridge for GUI inspection
+dioxus-plugin-mcp-bridge = { path = "../dioxus-plugin-mcp-bridge" }
+
+# Translation engine
+trad = "0.1"
+
+# Serialization
+base64 = "0.22"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures-util = "0.3"
+
+# Environment config
+dotenvy = "0.15"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Error handling
+anyhow = "1"
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Screen capture (for screenshot)
+xcap = "0.9"
+image = "0.25"
+
+# wry for webview access
+wry = "0.55"
+
+# Window APIs
+tao = "0.35"
+
+# Directory paths
+dirs = "5"
+
+# UUID generation for storage entities
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"
+tokio-tungstenite = "0.21"
+futures-util = "0.3"

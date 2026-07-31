@@ -52,3 +52,12 @@ Thumbs.db
 # SvelteKit
 .svelte-kit/
 build/
+
+# Rust
+target/
+Cargo.lock
+
+# Build
+dist/
+build/
+*.tbz
