@@ -3,9 +3,37 @@
 //! These functions run on a dedicated thread polling the MCP command queue.
 //! Extracted from main.rs so they can be tested without the Dioxus binary.
 
-use dioxus_plugin_mcp_bridge::{BridgeState, Response};
+use crate::application::TranslationService;
+use crate::domain::{AppSettings, TranslationResponse, SUPPORTED_LANGUAGES};
+use dioxus_shared::logger::{LogEntry, Logger};
+use dioxus_shared::mcp::bridge::{
+    build_commands_list, is_bridge_method, AppMetadata, BridgeState, Response,
+};
+use dioxus_shared::AppError;
 use std::sync::Arc;
 use std::thread;
+
+/// Names of app-specific commands registered by the Translator. Shared
+/// generic bridge methods are listed separately via `BRIDGE_METHODS`; this
+/// list MUST contain only commands `invoke_app_command` actually handles.
+const APP_COMMANDS: &[&str] = &[
+    "translator.languages.list",
+    "translator.translate",
+    "translator.settings.save",
+];
+
+/// One-shot helper that injects the app identity, log source, and
+/// app-registered commands into the bridge state. Called from
+/// `main.rs` (or directly from a test) before the consumer loop starts.
+pub fn inject_app_identity(state: &BridgeState) {
+    state.set_app_metadata(AppMetadata::new(
+        "translator",
+        env!("CARGO_PKG_VERSION"),
+        "translator",
+    ));
+    state.set_log_source("translator".to_string());
+    state.set_app_commands(APP_COMMANDS.iter().map(|s| s.to_string()).collect());
+}
 
 /// Drains pending bridge commands and posts a Response for each.
 ///
@@ -38,11 +66,19 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
             // eval commands: route to pending_eval_requests; bridge_consumer_loop
             // handles them by draining pending_js_results at top of next iteration
             if matches!(cmd.method.as_str(), "evaluate_js" | "dom_snapshot") {
-                state.enqueue_eval_request(dioxus_plugin_mcp_bridge::EvalRequest {
+                state.enqueue_eval_request(dioxus_shared::mcp::bridge::EvalRequest {
                     id: cmd.id,
                     method: cmd.method,
-                    params: cmd.params,
+                    payload: cmd.params,
                 });
+                continue;
+            }
+
+            // page_snapshot: route to pending_page_snapshot_requests for Dioxus main thread
+            if cmd.method == "page_snapshot" {
+                state.enqueue_page_snapshot_request(
+                    dioxus_shared::mcp::bridge::PageSnapshotRequest { id: cmd.id },
+                );
                 continue;
             }
 
@@ -52,14 +88,26 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                     result: Some(serde_json::json!({ "pong": true })),
                     error: None,
                 },
-                "app_info" => Response {
-                    result: Some(serde_json::json!({
-                        "name": "translator",
-                        "version": env!("CARGO_PKG_VERSION"),
-                        "platform": "dioxus-desktop",
-                    })),
-                    error: None,
-                },
+                "app_info" => {
+                    let metadata = state.app_metadata().unwrap_or_else(|| {
+                        AppMetadata::new(
+                            "translator",
+                            env!("CARGO_PKG_VERSION"),
+                            state.log_source(),
+                        )
+                    });
+                    let info = metadata.to_app_info(env!("CARGO_PKG_VERSION"));
+                    match serde_json::to_value(info) {
+                        Ok(value) => Response {
+                            result: Some(value),
+                            error: None,
+                        },
+                        Err(e) => Response {
+                            result: None,
+                            error: Some(format!("app_info serialization: {e}")),
+                        },
+                    }
+                }
                 "initialize" => Response {
                     result: Some(serde_json::json!({
                         "protocolVersion": "2024-11-05",
@@ -71,19 +119,14 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                     })),
                     error: None,
                 },
-                "commands_list" => Response {
-                    result: Some(serde_json::json!([
-                        "translator.languages.list",
-                        "translator.translate",
-                        "translator.history.recent",
-                        "translator.glossary.add",
-                        "translator.settings.save",
-                        "ui.toggle_theme",
-                        "screenshot",
-                        "logs_read",
-                    ])),
-                    error: None,
-                },
+                "commands_list" => {
+                    // Shared bridge methods (css_audit, etc.) come first,
+                    // app-registered commands are appended after.
+                    Response {
+                        result: Some(build_commands_list(&state.app_commands())),
+                        error: None,
+                    }
+                }
                 "logs_read" => {
                     let lines = cmd
                         .params
@@ -96,11 +139,22 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                         .and_then(|v| v.as_str())
                         .map(|s| s.to_lowercase());
 
-                    let all_logs = state.get_logs();
-                    let filtered: Vec<String> = all_logs
+                    let all_entries = Logger::global().get_entries().unwrap_or_default();
+
+                    let source_tag = state.log_source();
+                    let formatted: Vec<String> = all_entries
                         .into_iter()
+                        .map(|entry: LogEntry| {
+                            let source = entry.source.as_deref().unwrap_or(source_tag.as_str());
+                            format!(
+                                "[{} {} {}] {}",
+                                entry.level, entry.timestamp, source, entry.message
+                            )
+                        })
                         .filter(|log| {
-                            filter.as_ref().map_or(true, |f| log.to_lowercase().contains(f))
+                            filter
+                                .as_ref()
+                                .is_none_or(|f| log.to_lowercase().contains(f))
                         })
                         .rev()
                         .take(lines)
@@ -111,8 +165,9 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
 
                     Response {
                         result: Some(serde_json::json!({
-                            "lines": filtered,
-                            "count": filtered.len()
+                            "lines": formatted,
+                            "count": formatted.len(),
+                            "source": source_tag,
                         })),
                         error: None,
                     }
@@ -129,14 +184,16 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                                     let height = img.height();
                                     let mut png_bytes = Vec::new();
                                     {
-                                        let encoder = image::codecs::png::PngEncoder::new(&mut png_bytes);
-                                        encoder.write_image(
-                                            img.as_raw(),
-                                            width,
-                                            height,
-                                            image::ExtendedColorType::Rgba8,
-                                        )
-                                        .expect("PNG encoding failed");
+                                        let encoder =
+                                            image::codecs::png::PngEncoder::new(&mut png_bytes);
+                                        encoder
+                                            .write_image(
+                                                img.as_raw(),
+                                                width,
+                                                height,
+                                                image::ExtendedColorType::Rgba8,
+                                            )
+                                            .expect("PNG encoding failed");
                                     }
                                     Response {
                                         result: Some(serde_json::json!({
@@ -174,14 +231,14 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                         .get("payload")
                         .cloned()
                         .unwrap_or(serde_json::json!({}));
-                    match invoke_app_command(name, &payload) {
+                    match invoke_app_command(name, &payload, &state) {
                         Ok(value) => Response {
                             result: Some(value),
                             error: None,
                         },
                         Err(e) => Response {
                             result: None,
-                            error: Some(e),
+                            error: Some(e.to_string()),
                         },
                     }
                 }
@@ -191,21 +248,35 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                         .get("action")
                         .and_then(|v| v.as_str())
                         .unwrap_or("");
-                    match invoke_ui_action(action, &cmd.params) {
-                        Ok(value) => Response {
-                            result: Some(value),
-                            error: None,
-                        },
-                        Err(e) => Response {
+                    let payload = cmd
+                        .params
+                        .get("payload")
+                        .cloned()
+                        .unwrap_or(serde_json::json!({}));
+                    state.enqueue_ui_action_request(dioxus_shared::mcp::bridge::ActionRequest {
+                        id: cmd.id.clone(),
+                        action: action.to_string(),
+                        payload,
+                    });
+                    // Response set asynchronously by main thread after dispatch
+                    continue;
+                }
+                other => {
+                    if is_bridge_method(other) {
+                        // Generic bridge method the Translator loop does
+                        // not implement itself; surface as method-not-found
+                        // so the client knows to look elsewhere.
+                        Response {
                             result: None,
-                            error: Some(e),
-                        },
+                            error: Some(format!("Method not found: {other} (code -32601)")),
+                        }
+                    } else {
+                        Response {
+                            result: None,
+                            error: Some(format!("unsupported bridge method: {other}")),
+                        }
                     }
                 }
-                other => Response {
-                    result: None,
-                    error: Some(format!("unsupported bridge method: {other}")),
-                },
             };
             state.set_response(cmd.id, response);
         }
@@ -216,62 +287,103 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
 /// Synchronous dispatch for bridge-invoked app commands. Returns JSON to send
 /// back to the MCP client. This is the MVP — full per-command registry is
 /// Phase 4 work per [`COMMAND_REGISTRY.md`](../DOCS/MIGRATION/COMMAND_REGISTRY.md).
-pub fn invoke_app_command(name: &str, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+pub fn invoke_app_command(
+    name: &str,
+    payload: &serde_json::Value,
+    state: &Arc<dioxus_shared::mcp::bridge::BridgeState>,
+) -> Result<serde_json::Value, AppError> {
     match name {
         "translator.languages.list" => {
-            let langs = serde_json::json!([
-                { "code": "en", "name": "English" },
-                { "code": "es", "name": "Spanish" },
-                { "code": "fr", "name": "French" },
-                { "code": "de", "name": "German" },
-                { "code": "it", "name": "Italian" },
-                { "code": "pt", "name": "Portuguese" },
-                { "code": "ru", "name": "Russian" },
-                { "code": "zh", "name": "Chinese" },
-                { "code": "ja", "name": "Japanese" },
-                { "code": "ko", "name": "Korean" },
-            ]);
-            Ok(langs)
+            let langs = SUPPORTED_LANGUAGES
+                .iter()
+                .map(|(code, name)| serde_json::json!({ "code": code, "name": name }))
+                .collect::<Vec<_>>();
+            Ok(serde_json::json!(langs))
         }
         "translator.translate" => {
             let text = payload.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            let source = payload.get("source_lang").and_then(|v| v.as_str()).unwrap_or("en");
-            let target = payload.get("target_lang").and_then(|v| v.as_str()).unwrap_or("es");
-            if source == target {
-                return Ok(serde_json::json!({
-                    "translated_text": text,
-                    "source_lang": source,
-                    "target_lang": target,
-                    "note": "same language; passthrough"
-                }));
+            let source = payload
+                .get("source_lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("en");
+            let target = payload
+                .get("target_lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("es");
+            match TranslationService::translate(text, source, target) {
+                Ok(response) => {
+                    let data = response.data.unwrap_or(TranslationResponse {
+                        translated_text: text.to_string(),
+                    });
+                    Ok(serde_json::json!({
+                        "translated_text": data.translated_text,
+                        "source_lang": source,
+                        "target_lang": target,
+                        "status": response.status,
+                        "message": response.message,
+                    }))
+                }
+                Err(e) => Err(e),
             }
-            Err(format!(
-                "translator.translate requires live engine (source={source} target={target}); use the UI ActionBus for full translation"
-            ))
         }
-        "translator.history.recent" => Ok(serde_json::json!([])),
-        "translator.glossary.add" => Ok(serde_json::json!({ "ok": true })),
-        "translator.settings.save" => Ok(serde_json::json!({ "ok": true })),
-        other => Err(format!("unknown command: {other}")),
+        "translator.settings.save" => {
+            let settings: AppSettings = serde_json::from_value(payload.clone())
+                .map_err(|e| AppError::ValidationError(format!("invalid settings payload: {e}")))?;
+            let path = crate::infrastructure::get_settings_path();
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent).map_err(|e| {
+                    AppError::Io(format!("failed to create settings directory: {e}"))
+                })?;
+            }
+            let content = serde_json::to_string_pretty(&settings)
+                .map_err(|e| AppError::Io(format!("failed to serialize settings: {e}")))?;
+            std::fs::write(&path, content)
+                .map_err(|e| AppError::Io(format!("failed to write settings file: {e}")))?;
+            Ok(serde_json::json!({ "ok": true, "saved": settings }))
+        }
+        other => Err(AppError::NotFound(format!("unknown command: {other}"))),
     }
 }
 
 /// Synchronous dispatch for UI actions invoked from MCP.
-pub fn invoke_ui_action(action: &str, _payload: &serde_json::Value) -> Result<serde_json::Value, String> {
-    match action {
-        "toggle_theme" | "add_term" | "save_settings" | "translate" | "swap_languages"
-        | "show-shortcuts" | "close" | "clear_text" | "copy_result" => {
-            Ok(serde_json::json!({ "ok": true, "action": action }))
-        }
-        other => Err(format!("unknown ui action: {other}")),
+///
+/// Implemented actions return `{"ok": true, "action": "<name>"}`. Actions
+/// listed here but not wired in `handle_action` (e.g. `add_term`) return
+/// `{"error": "not-implemented", "action": "<name>"}` so callers can detect
+/// the gap. Unknown actions return `AppError::NotFound`.
+pub fn invoke_ui_action(
+    action: &str,
+    _payload: &serde_json::Value,
+) -> Result<serde_json::Value, AppError> {
+    const IMPLEMENTED_UI_ACTIONS: &[&str] = &[
+        "translate",
+        "save_settings",
+        "toggle_theme",
+        "swap_languages",
+        "show-shortcuts",
+        "close",
+        "clear_text",
+        "copy_result",
+    ];
+    const UNIMPLEMENTED_UI_ACTIONS: &[&str] = &["add_term"];
+
+    if IMPLEMENTED_UI_ACTIONS.contains(&action) {
+        return Ok(serde_json::json!({ "ok": true, "action": action }));
     }
+    if UNIMPLEMENTED_UI_ACTIONS.contains(&action) {
+        return Ok(serde_json::json!({
+            "error": "not-implemented",
+            "action": action,
+        }));
+    }
+    Err(AppError::NotFound(format!("unknown ui action: {action}")))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dioxus_shared::mcp::bridge::Command;
     use std::time::Duration;
-    use dioxus_plugin_mcp_bridge::Command;
 
     #[test]
     fn bridge_consumer_loop_ping_returns_pong() {
@@ -292,14 +404,19 @@ mod tests {
         let _ = handle.join();
 
         let resp = state.get_response("1").expect("no response for id 1");
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         let result = resp.result.unwrap();
         assert_eq!(result.pointer("/pong"), Some(&serde_json::json!(true)));
     }
 
     #[test]
-    fn bridge_consumer_loop_app_info() {
+    fn bridge_consumer_loop_app_info_uses_injected_metadata() {
         let state = Arc::new(BridgeState::new());
+        inject_app_identity(&state);
         state.enqueue(Command {
             id: "2".to_string(),
             method: "app_info".to_string(),
@@ -316,11 +433,110 @@ mod tests {
         let _ = handle.join();
 
         let resp = state.get_response("2").expect("no response for id 2");
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         let result = resp.result.unwrap();
-        assert_eq!(result.pointer("/name"), Some(&serde_json::json!("translator")));
+        assert_eq!(
+            result.pointer("/name"),
+            Some(&serde_json::json!("translator"))
+        );
         assert!(result.pointer("/version").is_some());
-        assert_eq!(result.pointer("/platform"), Some(&serde_json::json!("dioxus-desktop")));
+        assert!(result.pointer("/platform").is_some());
+        assert_eq!(
+            result.pointer("/dioxus_version").and_then(|v| v.as_str()),
+            Some(env!("CARGO_PKG_VERSION"))
+        );
+    }
+
+    #[test]
+    fn bridge_consumer_loop_app_info_falls_back_without_injection() {
+        let state = Arc::new(BridgeState::new());
+        state.enqueue(Command {
+            id: "2b".to_string(),
+            method: "app_info".to_string(),
+            params: serde_json::json!({}),
+            received_at: std::time::Instant::now(),
+        });
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(50));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        let resp = state.get_response("2b").expect("no response for id 2b");
+        let result = resp.result.expect("expected result");
+        assert!(result.pointer("/name").and_then(|v| v.as_str()).is_some());
+        assert!(result
+            .pointer("/platform")
+            .and_then(|v| v.as_str())
+            .is_some());
+    }
+
+    #[test]
+    fn bridge_consumer_loop_commands_list_includes_css_audit_and_app_commands() {
+        let state = Arc::new(BridgeState::new());
+        inject_app_identity(&state);
+        state.enqueue(Command {
+            id: "cl".to_string(),
+            method: "commands_list".to_string(),
+            params: serde_json::json!({}),
+            received_at: std::time::Instant::now(),
+        });
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(50));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        let resp = state.get_response("cl").expect("no response for cl");
+        let result = resp.result.expect("expected result");
+        let arr = result.as_array().expect("array");
+        assert!(
+            arr.iter()
+                .any(|v| v.get("name").and_then(|n| n.as_str()) == Some("css_audit")),
+            "css_audit must be in commands_list (got {result})"
+        );
+        assert!(
+            arr.iter()
+                .any(|v| v.as_str() == Some("translator.translate")),
+            "translator.translate must be in commands_list"
+        );
+    }
+
+    #[test]
+    fn bridge_consumer_loop_ui_invoke_action_uses_payload_field() {
+        let state = Arc::new(BridgeState::new());
+        state.enqueue(Command {
+            id: "ui-p".to_string(),
+            method: "ui_invoke_action".to_string(),
+            params: serde_json::json!({
+                "action": "toggle_theme",
+                "payload": { "value": true },
+            }),
+            received_at: std::time::Instant::now(),
+        });
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(50));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        let pending = state.dequeue_ui_action_requests();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].action, "toggle_theme");
+        assert_eq!(pending[0].payload, serde_json::json!({ "value": true }));
     }
 
     #[test]
@@ -351,8 +567,10 @@ mod tests {
 
     #[test]
     fn invoke_app_command_languages_list() {
-        let result = invoke_app_command("translator.languages.list", &serde_json::json!({}))
-            .expect("expected Ok");
+        let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
+        let result =
+            invoke_app_command("translator.languages.list", &serde_json::json!({}), &state)
+                .expect("expected Ok");
         let langs = result.as_array().expect("expected array");
         assert!(!langs.is_empty());
         assert_eq!(langs[0].pointer("/code"), Some(&serde_json::json!("en")));
@@ -365,30 +583,51 @@ mod tests {
             "source_lang": "en",
             "target_lang": "en"
         });
-        let result = invoke_app_command("translator.translate", &payload).expect("expected Ok");
-        assert_eq!(result.pointer("/translated_text"), Some(&serde_json::json!("hello")));
-        assert_eq!(result.pointer("/note"), Some(&serde_json::json!("same language; passthrough")));
+        let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
+        let result =
+            invoke_app_command("translator.translate", &payload, &state).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/translated_text"),
+            Some(&serde_json::json!("hello"))
+        );
+        assert_eq!(
+            result.pointer("/message"),
+            Some(&serde_json::json!("Same language"))
+        );
     }
 
     #[test]
-    fn invoke_app_command_translate_different_lang_error() {
+    fn invoke_app_command_translate_different_lang_success() {
         let payload = serde_json::json!({
             "text": "hello",
             "source_lang": "en",
             "target_lang": "es"
         });
-        let result = invoke_app_command("translator.translate", &payload);
-        assert!(result.is_err());
-        let err = result.unwrap_err();
-        assert!(err.contains("requires live engine"));
+        let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
+        let result =
+            invoke_app_command("translator.translate", &payload, &state).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/translated_text"),
+            Some(&serde_json::json!("¿Qué pasa?"))
+        );
+        assert_eq!(
+            result.pointer("/source_lang"),
+            Some(&serde_json::json!("en"))
+        );
+        assert_eq!(
+            result.pointer("/target_lang"),
+            Some(&serde_json::json!("es"))
+        );
     }
 
     #[test]
     fn invoke_app_command_unknown() {
-        let result = invoke_app_command("translator.does_not_exist", &serde_json::json!({}));
+        let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
+        let result =
+            invoke_app_command("translator.does_not_exist", &serde_json::json!({}), &state);
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("unknown command"));
+        assert!(err.to_string().contains("unknown command"));
     }
 
     // --- invoke_ui_action tests ---
@@ -397,37 +636,63 @@ mod tests {
     fn invoke_ui_action_toggle_theme() {
         let result = invoke_ui_action("toggle_theme", &serde_json::json!({})).expect("expected Ok");
         assert_eq!(result.pointer("/ok"), Some(&serde_json::json!(true)));
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("toggle_theme")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("toggle_theme"))
+        );
     }
 
     #[test]
-    fn invoke_ui_action_add_term() {
+    fn invoke_ui_action_add_term_not_implemented() {
         let result = invoke_ui_action("add_term", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("add_term")));
+        assert_eq!(
+            result.pointer("/error"),
+            Some(&serde_json::json!("not-implemented"))
+        );
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("add_term"))
+        );
+        assert!(result.pointer("/ok").is_none());
     }
 
     #[test]
     fn invoke_ui_action_save_settings() {
-        let result = invoke_ui_action("save_settings", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("save_settings")));
+        let result =
+            invoke_ui_action("save_settings", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("save_settings"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_translate() {
         let result = invoke_ui_action("translate", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("translate")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("translate"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_swap_languages() {
-        let result = invoke_ui_action("swap_languages", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("swap_languages")));
+        let result =
+            invoke_ui_action("swap_languages", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("swap_languages"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_show_shortcuts() {
-        let result = invoke_ui_action("show-shortcuts", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("show-shortcuts")));
+        let result =
+            invoke_ui_action("show-shortcuts", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("show-shortcuts"))
+        );
     }
 
     #[test]
@@ -439,13 +704,19 @@ mod tests {
     #[test]
     fn invoke_ui_action_clear_text() {
         let result = invoke_ui_action("clear_text", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("clear_text")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("clear_text"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_copy_result() {
         let result = invoke_ui_action("copy_result", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("copy_result")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("copy_result"))
+        );
     }
 
     #[test]
@@ -453,7 +724,7 @@ mod tests {
         let result = invoke_ui_action("definitely_not_a_real_action", &serde_json::json!({}));
         assert!(result.is_err());
         let err = result.unwrap_err();
-        assert!(err.contains("unknown ui action"));
+        assert!(err.to_string().contains("unknown ui action"));
     }
 
     // --- evaluate_js / dom_snapshot routing tests ---
@@ -492,7 +763,10 @@ mod tests {
         assert_eq!(eval_requests.len(), 1, "expected 1 eval request enqueued");
         assert_eq!(eval_requests[0].id, cmd_id);
         assert_eq!(eval_requests[0].method, "evaluate_js");
-        assert_eq!(eval_requests[0].params.get("code"), Some(&serde_json::json!("1 + 1")));
+        assert_eq!(
+            eval_requests[0].payload.get("code"),
+            Some(&serde_json::json!("1 + 1"))
+        );
     }
 
     #[test]
@@ -522,7 +796,10 @@ mod tests {
         assert_eq!(eval_requests.len(), 1);
         assert_eq!(eval_requests[0].id, cmd_id);
         assert_eq!(eval_requests[0].method, "dom_snapshot");
-        assert_eq!(eval_requests[0].params.get("selector"), Some(&serde_json::json!("#root")));
+        assert_eq!(
+            eval_requests[0].payload.get("selector"),
+            Some(&serde_json::json!("#root"))
+        );
     }
 
     #[test]
@@ -555,7 +832,11 @@ mod tests {
         let resp = state.get_response(&cmd_id);
         assert!(resp.is_some(), "expected response for js result id");
         let resp = resp.unwrap();
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         // The raw JS result string "2" becomes a JSON string "2" when wrapped in json!()
         assert_eq!(resp.result.unwrap(), serde_json::json!("2"));
     }
