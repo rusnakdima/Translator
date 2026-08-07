@@ -39,10 +39,11 @@ pub fn inject_app_identity(state: &BridgeState) {
 ///
 /// Polled from a dedicated thread so MCP calls stop timing out.
 /// - Synchronous commands (ping, app_info, commands_list, commands_invoke,
-///   ui_invoke_action, screenshot, logs_read): handled directly here.
-/// - evaluate_js, dom_snapshot: enqueued to pending_eval_requests for
-///   the Dioxus App's eval loop (on the main thread) which calls webview
-///   and stores results via BridgeState.
+///   screenshot, logs_read): handled directly here.
+/// - evaluate_js, dom_snapshot, page_snapshot, ui_invoke_action: routed to the
+///   typed queues drained by the Dioxus-executor processor (`spawn_forever`
+///   loop in the app's `ActionProcessor`), which delivers each response
+///   exactly once via `BridgeState::set_response`.
 pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
     loop {
         if state.is_shutdown() {
