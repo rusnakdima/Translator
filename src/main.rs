@@ -97,6 +97,7 @@ struct ActionProcessorProps {
 /// shutdown signal; the bridge accept loop, WebSocket handlers, and the
 /// `bridge_consumer_loop` thread all observe `BridgeState::is_shutdown()` and
 /// exit cleanly (no leaked tasks/processes).
+#[derive(Clone)]
 struct BridgeShutdownOnDrop(Arc<dioxus_shared::mcp::bridge::BridgeState>);
 
 impl Drop for BridgeShutdownOnDrop {
@@ -166,6 +167,86 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
                             error: None,
                         },
                     );
+                }
+
+                for req in bridge_state.dequeue_command_invoke_requests() {
+                    if req.name == "translator.translate" {
+                        log_info!("[mcp] command {} id={}", req.name, req.id);
+                        let text = req
+                            .payload
+                            .get("text")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("");
+                        let source = req
+                            .payload
+                            .get("source_lang")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("en");
+                        let target = req
+                            .payload
+                            .get("target_lang")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("es");
+                        let (value, error) = match TranslationService::translate(text, source, target)
+                        {
+                            Ok(response) => {
+                                let translated_text = response
+                                    .data
+                                    .as_ref()
+                                    .map(|d| d.translated_text.clone())
+                                    .unwrap_or_default();
+                                bus.set_binding("translated_text", &translated_text);
+                                let entry_id =
+                                    format!("tx-{}", chrono::Utc::now().timestamp_millis());
+                                store.set(
+                                    "history.last_entry",
+                                    serde_json::json!({
+                                        "id": entry_id,
+                                        "query": text,
+                                        "result": translated_text,
+                                        "source_lang": source,
+                                        "target_lang": target,
+                                        "timestamp": chrono::Utc::now().to_rfc3339(),
+                                    }),
+                                );
+                                (
+                                    Some(serde_json::json!({
+                                        "translated_text": translated_text,
+                                        "source_lang": source,
+                                        "target_lang": target,
+                                        "status": response.status,
+                                        "message": response.message,
+                                    })),
+                                    None,
+                                )
+                            }
+                            Err(e) => (None, Some(e.to_string())),
+                        };
+                        bridge_state.set_response(
+                            req.id,
+                            dioxus_shared::mcp::bridge::Response {
+                                result: value,
+                                error,
+                            },
+                        );
+                    } else {
+                        match invoke_app_command(&req.name, &req.payload, &bridge_state) {
+                            Ok(value) => bridge_state.set_response(
+                                req.id,
+                                dioxus_shared::mcp::bridge::Response {
+                                    result: Some(value),
+                                    error: None,
+                                },
+                            ),
+                            Err(e) => bridge_state.set_response(
+                                req.id,
+                                dioxus_shared::mcp::bridge::Response {
+                                    result: None,
+                                    error: Some(e.to_string()),
+                                },
+                            ),
+                        }
+                    }
                 }
 
                 for req in bridge_state.dequeue_page_snapshot_requests() {
@@ -664,19 +745,26 @@ fn main() {
     // Forward every Logger::global() entry into the bridge log buffer so the
     // bridge-backed `logs_tail`/`logs_read` report real, bridge-sourced entries.
     Logger::global().set_bridge_state(state.clone());
+    translator::bridge::inject_app_identity(&state);
+    log_info!("[startup] MCP bridge wiring complete; binding 127.0.0.1:9223");
     let listener = match bridge.bind() {
         Ok(listener) => listener,
         Err(error) => {
+            log_error!(
+                "[startup] MCP bridge cannot bind exactly to 127.0.0.1:9223: {error}"
+            );
             eprintln!("MCP Bridge cannot bind exactly to 127.0.0.1:9223: {error}");
             std::process::exit(1);
         }
     };
+    log_info!("[startup] MCP bridge bound 127.0.0.1:9223; advertising listening state");
 
     thread::spawn(move || {
-        println!("MCP Bridge listening on ws://127.0.0.1:9223");
+        log_info!("[bridge] MCP bridge accept loop starting on ws://127.0.0.1:9223");
         if let Err(error) = bridge.run_with_listener(listener) {
-            eprintln!("MCP Bridge stopped: {error}");
+            log_error!("[bridge] MCP bridge accept loop stopped: {error}");
         }
+        log_info!("[bridge] MCP bridge accept loop ended");
     });
 
     // Drain the bridge command queue on a dedicated worker thread; webview

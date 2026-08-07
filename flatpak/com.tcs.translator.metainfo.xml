@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.tcs.translator</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Translator</name>
+  <summary>A modern cross-platform desktop translation application</summary>
+  <description>
+    <p>
+      Translator is a desktop application for instant text translation between 15+ languages.
+      Features include real-time translation, dark/light mode, clipboard integration,
+      and keyboard shortcuts.
+    </p>
+  </description>
+  <launchable type="desktop-id">com.tcs.translator.desktop</launchable>
+  <url type="homepage">https://github.com/rusnakdima/Translator</url>
+  <developer_name>Dmitriy303</developer_name>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.5.2" date="2026-01-01">
+      <description>
+        <p>Release version 0.5.2 with code formatting, refactoring, and dependency updates.</p>
+      </description>
+    </release>
+  </releases>
+</component>

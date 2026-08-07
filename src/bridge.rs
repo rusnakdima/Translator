@@ -308,6 +308,18 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                         .get("payload")
                         .cloned()
                         .unwrap_or(serde_json::json!({}));
+                    if name == "translator.translate" {
+                        // Executor drain (main.rs) sets `translated_text`; never
+                        // re-enter handle_action from this path.
+                        state.enqueue_command_invoke_request(
+                            dioxus_shared::mcp::bridge::CommandInvokeRequest {
+                                id: cmd.id.clone(),
+                                name: name.to_string(),
+                                payload,
+                            },
+                        );
+                        continue;
+                    }
                     match invoke_app_command(name, &payload, &state) {
                         Ok(value) => Response {
                             result: Some(value),
@@ -713,27 +725,33 @@ mod tests {
     }
 
     #[test]
-    fn invoke_app_command_translate_different_lang_success() {
+    fn invoke_app_command_translate_empty_input_is_validation_error() {
         let payload = serde_json::json!({
-            "text": "hello",
+            "text": "   ",
             "source_lang": "en",
             "target_lang": "es"
         });
         let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
         let result =
-            invoke_app_command("translator.translate", &payload, &state).expect("expected Ok");
-        assert_eq!(
-            result.pointer("/translated_text"),
-            Some(&serde_json::json!("¿Qué pasa?"))
-        );
-        assert_eq!(
-            result.pointer("/source_lang"),
-            Some(&serde_json::json!("en"))
-        );
-        assert_eq!(
-            result.pointer("/target_lang"),
-            Some(&serde_json::json!("es"))
-        );
+            invoke_app_command("translator.translate", &payload, &state);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("empty"));
+    }
+
+    #[test]
+    fn invoke_app_translate_unsupported_lang_is_validation_error() {
+        let payload = serde_json::json!({
+            "text": "hello",
+            "source_lang": "en",
+            "target_lang": "zz"
+        });
+        let state = Arc::new(dioxus_shared::mcp::bridge::BridgeState::new());
+        let result =
+            invoke_app_command("translator.translate", &payload, &state);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Unsupported language"));
     }
 
     #[test]

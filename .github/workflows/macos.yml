@@ -1,4 +1,4 @@
-name: Build for Linux
+name: Build for macOS
 
 on:
   push:
@@ -6,20 +6,15 @@ on:
       - "v*"
 
 jobs:
-  build-linux:
+  build-macos:
     permissions:
       contents: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: macos-latest
     env:
       NAME_APP: translator
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install dependencies (ubuntu only)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -47,7 +42,7 @@ jobs:
         run: |
           mkdir -p dist
           cd target/release
-          tar -czf ../../../dist/translator-${GITHUB_REF_NAME#v}-linux-x86_64.tar.gz translator
+          tar -czf ../../../dist/translator-${GITHUB_REF_NAME#v}-macos-x86_64.tar.gz translator
           ls -la ../../../dist/
 
       - name: Upload to Existing Release

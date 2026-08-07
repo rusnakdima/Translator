@@ -9,10 +9,10 @@
 //! - `infrastructure/` - TranslationBackend (trad crate)
 //! - UI is generated from schema via `dioxus_shared::DynamicPage`
 
-pub mod domain;
 pub mod application;
-pub mod infrastructure;
 pub mod bridge;
+pub mod domain;
+pub mod infrastructure;
 
 // Re-export for convenience
 pub use application::TranslationService;

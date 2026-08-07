@@ -18,10 +18,7 @@ dioxus-html = "0.8.0-alpha.0"
 dioxus-router = "0.8.0-alpha.0"
 
 # Shared library - pure Rust business logic (schema-driven UI)
-dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui"] }
-
-# MCP Bridge for GUI inspection
-dioxus-plugin-mcp-bridge = { path = "../dioxus-plugin-mcp-bridge" }
+dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui", "bridge"] }
 
 # Translation engine
 trad = "0.1"
@@ -64,6 +61,9 @@ dirs = "5"
 
 # UUID generation for storage entities
 uuid = { version = "1", features = ["v4"] }
+
+# Clipboard access
+arboard = "3"
 
 [dev-dependencies]
 tempfile = "3"

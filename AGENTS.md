@@ -38,10 +38,8 @@ Translator/
 │   │   ├── glossary.rs         # In-memory glossary storage
 │   │   ├── history.rs          # In-memory history storage
 │   │   └── settings.rs         # JSON file settings persistence
-│   └── assets/
-│       └── tailwind.css        # TailwindCSS styles
 ├── schemas/
-│   └── translator_v2.json      # SDUI schema (4 pages, modals, shortcuts)
+│   └── translator.json       # SDUI schema (3 pages, modals, shortcuts; symlink → /mnt/Other/Projects/schemas/translatorschemas.json)
 ├── Cargo.toml
 └── AGENTS.md                   # This file
 
@@ -71,9 +69,9 @@ dioxus-shared/                  # Shared SDUI library
 ### Flow
 
 ```
-Schema JSON (translator_v2.json)
-    ↓
-DynamicPage component (src/main.rs:314)
+Schema JSON (schemas/translator.json → /mnt/Other/Projects/schemas/translatorschemas.json)
+    ↓ seeded into JSON DB (~/.local/share/com.tcs.translator/schemas.json) via nosql_orm
+DynamicPage component (src/main.rs)
     ↓ finds page by route
 DynamicRenderer component (dioxus-shared)
     ↓ matches component string to arm
@@ -84,21 +82,22 @@ Concrete Dioxus element (div, button, textarea, etc.)
 
 ```json
 {
-  "app_id": "com.tcs.translator",
-  "version": "2.0.0",
+  "app_id": "translator",
+  "version": "1.0.0",
+  "id": "translator",
   "shortcuts": [...],
   "modals": [...],
   "pages": [
     {
       "id": "translate-page",
       "title": "Translate",
-      "route": "/translate",
+      "route": "/",
       "layout": "stacked",
       "elements": [
         {
           "id": "header",
           "component": "div",
-          "classes": "flex items-center justify-between p-4 border-b",
+          "classes": "flex items-center justify-between p-4 divider",
           "props": {},
           "children": [...]
         }
@@ -110,9 +109,9 @@ Concrete Dioxus element (div, button, textarea, etc.)
 
 ### Key Schema Types
 
-- **Schema**: Top-level container with `app_id`, `version`, `pages`, `shortcuts`, `modals`
+- **Schema**: Top-level container with `app_id`, `version`, `pages`, `shortcuts`, `modals`, `id`
 - **Page**: Single page with `route` path, `elements` array
-- **CanvasElement**: Any UI element with `component` (type string), `props` (key-value), `classes` (Tailwind), `children` (nested elements), `visible` toggle
+- **CanvasElement**: Any UI element with `component` (type string), `props` (key-value), `classes` (semantic layout classes + style-free semantic tokens resolved by `ClassMapper`), `children` (nested elements), `visible` toggle
 - **Shortcut**: Keyboard shortcut binding (`keys` → `action`)
 - **Modal**: Dialog overlay with `title` and `elements`
 
@@ -205,9 +204,11 @@ Schema elements with `binding` prop automatically sync to ActionBus:
 
 ### Dark Mode
 
-All components detect `dark_mode: bool` prop and apply appropriate Tailwind classes:
-- Dark: `bg-gray-900 text-white border-gray-700`
-- Light: `bg-white text-gray-900 border-gray-200`
+All components detect `dark_mode: bool` prop and resolve classes via `ClassMapper`
+(theme-aware semantic tokens → concrete Tailwind classes). Interactive helper
+classes (`get_input_classes`, `get_btn_classes`, `get_surface_classes`, etc.) map
+schema semantic tokens (`btn-filled`, `btn-tonal`, `input-base`, `surface-container`,
+`divider`, …) through `ClassMapper::map_all(extra)`.
 
 ---
 
@@ -252,12 +253,12 @@ pub struct Language { pub code: String, pub name: String }
 pub struct LanguagesResponse { pub languages: Vec<Language> }
 pub struct TranslationRequest { pub text, pub source_lang, pub target_lang }
 pub struct TranslationResponse { pub translated_text: String }
-pub struct TranslationResult { pub status, pub message, pub data: TranslationResponse }
 pub struct Translation { pub id, pub source_text, pub target_text, pub source_lang, pub target_lang, pub created_at }
 
 pub trait TranslationService {
     fn get_supported_languages(&self) -> dioxus_shared::Response<LanguagesResponse>;
-    fn translate(&mut self, text: &str, source_lang: &str, target_lang: &str) -> Result<TranslationResult, String>;
+    fn translate(&mut self, text: &str, source_lang: &str, target_lang: &str)
+        -> Result<dioxus_shared::Response<TranslationResponse>, dioxus_shared::AppError>;
 }
 ```
 
@@ -272,7 +273,8 @@ pub trait TranslationService {
 `TranslationService` (`src/application/translation_service.rs`) delegates to infrastructure:
 ```rust
 impl TranslationService {
-    pub fn translate(text: &str, source_lang: &str, target_lang: &str) -> Result<TranslationResult, String> {
+    pub fn translate(text: &str, source_lang: &str, target_lang: &str)
+        -> Result<dioxus_shared::Response<TranslationResponse>, dioxus_shared::AppError> {
         let backend = get_translation_backend();
         backend.write().unwrap().translate(text, source_lang, target_lang)
     }
@@ -291,7 +293,7 @@ Uses the `trad` crate for translation:
 - Lazy-initializes translator on first use
 - Supports 15+ languages via `trad::languages::*`
 - Thread-local Tokio runtime for async translation
-- Returns `TranslationResult` with status/message/data shape
+- Returns `Response<TranslationResponse>` / `AppError` (data-first envelope)
 
 ### Storage
 
@@ -303,7 +305,8 @@ Uses the `trad` crate for translation:
 
 ## 9. Adding a New Page
 
-**No code changes required.** Just edit `schemas/translator_v2.json`:
+**No code changes required.** Edit `schemas/translator.json` (canonical source:
+`/mnt/Other/Projects/schemas/translatorschemas.json`):
 
 ```json
 {
@@ -317,7 +320,7 @@ Uses the `trad` crate for translation:
         {
           "id": "header",
           "component": "div",
-          "classes": "p-4",
+          "classes": "p-4 surface-container",
           "children": [
             { "id": "title", "component": "text", "classes": "text-xl", "props": { "text": "My New Page" } }
           ]
@@ -328,7 +331,8 @@ Uses the `trad` crate for translation:
 }
 ```
 
-Then add navigation buttons pointing to `/my-new-page`.
+Then add navigation buttons pointing to `/my-new-page`. The updated schema is
+picked up on next launch (schema is read from the JSON DB via `nosql_orm`).
 
 ---
 
@@ -368,9 +372,9 @@ Then use in schema:
 |--------|----------------------|-------------------------|
 | Framework | Tauri v2 + Angular 22 | Dioxus 0.8 Desktop |
 | UI Rendering | Angular components + TailwindCSS v4 | SDUI via DynamicPage/DynamicRenderer |
-| Schema | Stored in JSON DB at `~/.local/share/...` | Committed at `schemas/translator_v2.json` |
+| Schema | Stored in JSON DB at `~/.local/share/...` | JSON DB via `nosql_orm`; seeded from `schemas/translator.json` |
 | State Management | Angular signals + Tauri events | ActionBus context (Signals) |
-| Styling | Semantic props → CSS classes | Schema `classes` field with Tailwind |
+| Styling | Semantic props → CSS classes | Schema `classes` (semantic tokens) → `ClassMapper` → Tailwind |
 | Navigation | Angular Router | ActionBus.navigate() → route signal |
 | Dark Mode | html.dark class + ThemeService | ActionBus.toggle_theme() + dark_mode prop |
 | Translation | Tauri command → async event | Direct Rust function call |
@@ -384,7 +388,7 @@ New: `ActionBus.dispatch()` → `ActionProcessor` watches queue → `handle_acti
 
 ### Schema Classes
 
-Old Angular version had semantic props (layout, gap, etc.) that transformed to CSS at runtime. Current version uses `classes` field directly with Tailwind class names. Both support dark mode via theme switching.
+Old Angular version had semantic props (layout, gap, etc.) that transformed to CSS at runtime. Current version uses semantic layout classes plus style-free semantic tokens (e.g. `btn-filled`, `btn-tonal`, `input-base`, `surface-container`, `divider`) that `ClassMapper` resolves to theme-aware Tailwind classes. Both support dark mode via theme switching. Raw Tailwind/hex color classes in schema are forbidden (Rule 5).
 
 ---
 
@@ -393,5 +397,7 @@ Old Angular version had semantic props (layout, gap, etc.) that transformed to C
 - **No test files** unless explicitly requested
 - **snake_case** for Rust functions/variables
 - **PascalCase** for Rust structs/traits
-- Schema `classes` uses Tailwind class names directly
+- Schema `classes` uses semantic names (layout classes + `ClassMapper` tokens), never raw Tailwind/hex colors
+- All schema/DB access goes through `nosql_orm` via `dioxus-shared` (Rule 6)
+- `Response<T>` is data-first; errors use `dioxus_shared::AppError`
 - Always `cargo check` after changes — never `cargo build` for verification

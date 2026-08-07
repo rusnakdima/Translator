@@ -1,0 +1,151 @@
+name: Build for Android
+
+# ⚠️  Dioxus Desktop (wry + tao) does NOT support Android.
+# This workflow will FAIL until the app is refactored for dioxus-mobile.
+# To fix for Android, the app needs:
+#   - Separate binary target with dioxus-mobile + axum + mobile webview
+#   - Remove wry, xcap, image (desktop-only deps) from Android target
+#   - This is a significant refactor beyond CI setup
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-android:
+    permissions:
+      contents: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from git tag
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+      - name: Free up disk space
+        run: |
+          echo "Freeing up disk space..."
+          sudo rm -rf /usr/share/dotnet || true
+          sudo rm -rf /opt/ghc || true
+          sudo rm -rf /usr/local/share/boost || true
+          sudo rm -rf /usr/share/swift || true
+          sudo rm -rf /usr/local/.ghcup || true
+          sudo apt-get clean || true
+          docker system prune -a -f || true
+          df -h
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: gradle
+
+      - name: Install system packages (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf lib32z1 lib32stdc++6 unzip wget libssl-dev
+
+      - name: Set OpenSSL environment for Android
+        run: |
+          echo "OPENSSL_LIB_DIR=/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
+          echo "OPENSSL_INCLUDE_DIR=/usr/include/openssl" >> $GITHUB_ENV
+
+      - name: Install Android SDK
+        run: |
+          export ANDROID_HOME=$HOME/Android/Sdk
+          export ANDROID_SDK_ROOT=$ANDROID_HOME
+          mkdir -p "$ANDROID_HOME"
+          wget https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip commandlinetools-linux-11076708_latest.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          rm commandlinetools-linux-11076708_latest.zip
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          echo "$ANDROID_HOME/platform-tools" >> $GITHUB_PATH
+
+      - name: Accept Android SDK licenses and install components
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platform-tools" "build-tools;34.0.0" "platforms;android-34" "ndk;25.1.8937393"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.1.8937393" >> $GITHUB_ENV
+
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/build-cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add Android Rust targets
+        run: |
+          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./target"
+
+      - name: Build app
+        run: |
+          cargo build --release --target aarch64-linux-android
+        continue-on-error: true
+
+      - name: Find and Prepare Artifacts
+        id: prepare-artifacts
+        run: |
+          echo "=== Finding APK files ==="
+          find target -name "*.apk" 2>/dev/null || true
+          echo "=== Finding AAB files ==="
+          find target -name "*.aab" 2>/dev/null || true
+
+          APK_PATH=$(find target -name "*.apk" | head -1)
+          if [ -n "$APK_PATH" ]; then
+            echo "APK_PATH=$APK_PATH" >> $GITHUB_ENV
+            cp "$APK_PATH" "translator_${VERSION}_android.apk"
+            echo "Found APK: $APK_PATH"
+          else
+            echo "⚠️  No APK found. Android build may have failed (expected — Dioxus Desktop doesn't support Android yet)."
+            echo "android_build=failed" >> $GITHUB_ENV
+          fi
+
+      - name: Upload Artifacts
+        if: env.android_build != 'failed'
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-artifacts
+          path: |
+            translator_${VERSION}_android.apk
+
+      - name: Upload to Existing Release
+        if: env.android_build != 'failed'
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            translator_${VERSION}_android.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

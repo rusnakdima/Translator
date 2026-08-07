@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Translator
+Comment=A modern cross-platform desktop translation application
+Exec=translator
+Icon=com.tcs.translator
+Terminal=false
+Type=Application
+Categories=Utility;Network;
+Keywords=translate;translation;languages;
+StartupWMClass=translator
