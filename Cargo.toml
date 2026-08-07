@@ -10,12 +10,12 @@ path = "src/main.rs"
 
 [dependencies]
 # Dioxus core
-dioxus = { version = "0.8.0-alpha.0", features = ["desktop", "html", "hooks", "signals", "macro", "lib", "router"] }
-dioxus-desktop = { version = "0.8.0-alpha.0", default-features = false, features = ["devtools", "dioxus-signals"] }
-dioxus-core = "0.8.0-alpha.0"
-dioxus-signals = "0.8.0-alpha.0"
-dioxus-html = "0.8.0-alpha.0"
-dioxus-router = "0.8.0-alpha.0"
+dioxus = { version = "0.8.0-alpha.1", features = ["desktop", "html", "hooks", "signals", "macro", "lib", "router"] }
+dioxus-desktop = { version = "0.8.0-alpha.1", default-features = false, features = ["devtools", "dioxus-signals"] }
+dioxus-core = "0.8.0-alpha.1"
+dioxus-signals = "0.8.0-alpha.1"
+dioxus-html = "0.8.0-alpha.1"
+dioxus-router = "0.8.0-alpha.1"
 
 # Shared library - pure Rust business logic (schema-driven UI)
 dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui", "bridge"] }
