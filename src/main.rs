@@ -11,6 +11,10 @@ use dioxus_desktop::tao;
 use dioxus_desktop::Config;
 use dioxus_shared::get_theme_css;
 use dioxus_shared::mcp::bridge::McpBridge;
+use dioxus_shared::mcp::bridge::{
+    generate_css_audit_js, process_computed_styles_sync, process_dom_query_sync,
+    process_event_simulate_sync,
+};
 use dioxus_shared::schema::{CanvasElement, Schema};
 use dioxus_shared::storage::SignalStore;
 use dioxus_shared::themes::{ThemeMode, ThemeVariant};
@@ -20,6 +24,7 @@ use dioxus_shared::ui::DynamicPage;
 use dioxus_shared::AlgorithmRegistry;
 use dioxus_shared::I18nStore;
 use dioxus_shared::{log_debug, log_error, log_info, log_warn};
+use dioxus_shared::logger::Logger;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -87,6 +92,20 @@ struct ActionProcessorProps {
     schema: Schema,
 }
 
+/// Requests bridge shutdown when the Dioxus component owning the processor is
+/// torn down. Clear ownership: the app's processor is the single owner of the
+/// shutdown signal; the bridge accept loop, WebSocket handlers, and the
+/// `bridge_consumer_loop` thread all observe `BridgeState::is_shutdown()` and
+/// exit cleanly (no leaked tasks/processes).
+struct BridgeShutdownOnDrop(Arc<dioxus_shared::mcp::bridge::BridgeState>);
+
+impl Drop for BridgeShutdownOnDrop {
+    fn drop(&mut self) {
+        log_info!("[bridge] processor teardown: requesting bridge shutdown");
+        self.0.request_shutdown();
+    }
+}
+
 #[component]
 fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
     let mut prev_len = use_signal(|| 0usize);
@@ -118,8 +137,9 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
     let schema_for_loop = props.schema.clone();
     let bridge_state_for_loop = bridge_state.clone();
     use_hook(move || {
+        let processor_bridge_state = bridge_state_for_loop.clone();
         dioxus_core::spawn_forever(async move {
-            let bridge_state = bridge_state_for_loop;
+            let bridge_state = processor_bridge_state;
             let mut bus = bus_for_loop;
             let store = store_for_loop;
             let schema = schema_for_loop;
@@ -127,6 +147,10 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
             // Wait for the webview to finish initializing.
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             loop {
+                if bridge_state.is_shutdown() {
+                    log_info!("[bridge] dioxus-executor bridge processor stopping");
+                    break;
+                }
                 for req in bridge_state.dequeue_ui_action_requests() {
                     log_info!("[mcp] action={} payload={}", req.action, req.payload);
                     let action = dioxus_shared::ui::components::action_bus::AppAction {
@@ -173,6 +197,7 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
                             })
                         }),
                         "bindings": bus.bindings.read().clone(),
+                        "binding_values": binding_values(&bus),
                         "theme": if bus.is_dark_mode() { "dark" } else { "light" },
                     });
 
@@ -180,6 +205,169 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
                         req.id,
                         dioxus_shared::mcp::bridge::Response {
                             result: Some(snapshot),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_schema_requests() {
+                    log_info!("[mcp] get_schema id={}", req.id);
+                    let mut schema_value =
+                        serde_json::to_value(&schema).unwrap_or(serde_json::json!({}));
+                    if let Some(obj) = schema_value.as_object_mut() {
+                        obj.insert("route".to_string(), serde_json::json!(bus.current_route()));
+                        obj.insert(
+                            "bindings".to_string(),
+                            serde_json::json!(bus.bindings.read().clone()),
+                        );
+                        obj.insert("binding_values".to_string(), binding_values(&bus));
+                    }
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(schema_value),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_component_tree_requests() {
+                    log_info!("[mcp] component_tree id={}", req.id);
+                    let current_route = bus.current_route();
+                    let bindings = bus.bindings.read().clone();
+                    let page = schema
+                        .pages
+                        .iter()
+                        .find(|p| p.route == current_route)
+                        .or_else(|| schema.pages.first());
+                    let tree = serde_json::json!({
+                        "route": current_route,
+                        "page_id": page.as_ref().map(|p| p.id.as_str()),
+                        "components": page
+                            .as_ref()
+                            .map(|p| serialize_tree_with_values(&p.elements, &bindings))
+                            .unwrap_or_default(),
+                    });
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(tree),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_navigate_requests() {
+                    let valid_routes: Vec<&str> =
+                        schema.pages.iter().map(|p| p.route.as_str()).collect();
+                    if valid_routes.contains(&req.route.as_str()) {
+                        log_info!("[mcp] navigate route={} id={}", req.route, req.id);
+                        bus.navigate(&req.route, None);
+                        bridge_state.set_response(
+                            req.id,
+                            dioxus_shared::mcp::bridge::Response {
+                                result: Some(serde_json::json!({
+                                    "navigated": true,
+                                    "route": req.route,
+                                })),
+                                error: None,
+                            },
+                        );
+                    } else {
+                        bridge_state.set_response(
+                            req.id,
+                            dioxus_shared::mcp::bridge::Response {
+                                result: None,
+                                error: Some(format!(
+                                    "unknown route: {} (valid routes: {})",
+                                    req.route,
+                                    valid_routes.join(", ")
+                                )),
+                            },
+                        );
+                    }
+                }
+
+                for req in bridge_state.dequeue_dom_query_requests() {
+                    log_info!("[mcp] dom_query selector={:?} id={}", req.selector, req.id);
+                    let js = process_dom_query_sync(&req);
+                    let eval_req = dioxus_shared::mcp::bridge::EvalRequest {
+                        id: req.id.clone(),
+                        method: "dom_query".to_string(),
+                        payload: serde_json::json!({ "js": js }),
+                    };
+                    let result =
+                        dioxus_shared::mcp::bridge::process_webview_eval_async(&desktop, &eval_req)
+                            .await;
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(serde_json::Value::String(result)),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_event_simulate_requests() {
+                    log_info!(
+                        "[mcp] event_simulate {} on {} id={}",
+                        req.event_type,
+                        req.selector,
+                        req.id
+                    );
+                    let js = process_event_simulate_sync(&req);
+                    let eval_req = dioxus_shared::mcp::bridge::EvalRequest {
+                        id: req.id.clone(),
+                        method: "event_simulate".to_string(),
+                        payload: serde_json::json!({ "js": js }),
+                    };
+                    let result =
+                        dioxus_shared::mcp::bridge::process_webview_eval_async(&desktop, &eval_req)
+                            .await;
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(serde_json::Value::String(result)),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_computed_styles_requests() {
+                    log_info!("[mcp] computed_styles {} id={}", req.selector, req.id);
+                    let js = process_computed_styles_sync(&req);
+                    let eval_req = dioxus_shared::mcp::bridge::EvalRequest {
+                        id: req.id.clone(),
+                        method: "computed_styles".to_string(),
+                        payload: serde_json::json!({ "js": js }),
+                    };
+                    let result =
+                        dioxus_shared::mcp::bridge::process_webview_eval_async(&desktop, &eval_req)
+                            .await;
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(serde_json::Value::String(result)),
+                            error: None,
+                        },
+                    );
+                }
+
+                for req in bridge_state.dequeue_css_audit_requests() {
+                    log_info!("[mcp] css_audit selector={:?} id={}", req.selector, req.id);
+                    let js = generate_css_audit_js(req.selector.as_deref());
+                    let eval_req = dioxus_shared::mcp::bridge::EvalRequest {
+                        id: req.id.clone(),
+                        method: "css_audit".to_string(),
+                        payload: serde_json::json!({ "js": js }),
+                    };
+                    let result =
+                        dioxus_shared::mcp::bridge::process_webview_eval_async(&desktop, &eval_req)
+                            .await;
+                    bridge_state.set_response(
+                        req.id,
+                        dioxus_shared::mcp::bridge::Response {
+                            result: Some(serde_json::json!({ "audit": result })),
                             error: None,
                         },
                     );
@@ -201,7 +389,8 @@ fn ActionProcessor(mut props: ActionProcessorProps) -> Element {
 
                 tokio::time::sleep(std::time::Duration::from_millis(10)).await;
             }
-        })
+        });
+        BridgeShutdownOnDrop(bridge_state_for_loop)
     });
 
     rsx! { Fragment {} }
@@ -223,6 +412,43 @@ fn serialize_elements(elements: &[CanvasElement]) -> Vec<serde_json::Value> {
             })
         })
         .collect()
+}
+
+/// Serialize a CanvasElement tree into schema-derived component-tree nodes,
+/// each carrying the live binding value for every bound element.
+fn serialize_tree_with_values(
+    elements: &[CanvasElement],
+    bindings: &std::collections::HashMap<String, String>,
+) -> Vec<serde_json::Value> {
+    elements
+        .iter()
+        .map(|el| {
+            let binding = el.data_binding.as_ref().map(|b| b.field.clone());
+            let value = binding
+                .as_ref()
+                .and_then(|f| bindings.get(f))
+                .cloned()
+                .unwrap_or_default();
+            serde_json::json!({
+                "id": el.id,
+                "component": el.component,
+                "binding": binding,
+                "value": value,
+                "children": serialize_tree_with_values(&el.children, bindings),
+            })
+        })
+        .collect()
+}
+
+/// Snapshot the primary translator bindings with sensible defaults so bridge
+/// inspection responses are deterministic even before the user has typed.
+fn binding_values(bus: &ActionBus) -> serde_json::Value {
+    serde_json::json!({
+        "source_text": bus.get_binding("source_text").unwrap_or_default(),
+        "source_lang": bus.get_binding("source_lang").unwrap_or_else(|| "en".to_string()),
+        "target_lang": bus.get_binding("target_lang").unwrap_or_else(|| "es".to_string()),
+        "translated_text": bus.get_binding("translated_text").unwrap_or_default(),
+    })
 }
 
 fn handle_action(bus: &mut ActionBus, action: AppAction, store: Arc<SignalStore>) {
@@ -435,6 +661,9 @@ pub use translator::bridge::{bridge_consumer_loop, invoke_app_command, invoke_ui
 
 fn main() {
     let (bridge, state) = McpBridge::new(9223);
+    // Forward every Logger::global() entry into the bridge log buffer so the
+    // bridge-backed `logs_tail`/`logs_read` report real, bridge-sourced entries.
+    Logger::global().set_bridge_state(state.clone());
     let listener = match bridge.bind() {
         Ok(listener) => listener,
         Err(error) => {

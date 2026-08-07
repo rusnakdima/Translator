@@ -7,7 +7,8 @@ use crate::application::TranslationService;
 use crate::domain::{AppSettings, TranslationResponse, SUPPORTED_LANGUAGES};
 use dioxus_shared::logger::{LogEntry, Logger};
 use dioxus_shared::mcp::bridge::{
-    build_commands_list, is_bridge_method, AppMetadata, BridgeState, Response,
+    build_commands_list, handle_bridge_command, is_bridge_method, AppMetadata, BridgeState,
+    Response,
 };
 use dioxus_shared::AppError;
 use std::sync::Arc;
@@ -35,15 +36,18 @@ pub fn inject_app_identity(state: &BridgeState) {
     state.set_app_commands(APP_COMMANDS.iter().map(|s| s.to_string()).collect());
 }
 
-/// Drains pending bridge commands and posts a Response for each.
+/// Polls pending bridge requests and posts a Response for each.
 ///
 /// Polled from a dedicated thread so MCP calls stop timing out.
 /// - Synchronous commands (ping, app_info, commands_list, commands_invoke,
-///   screenshot, logs_read): handled directly here.
+///   screenshot, logs_read, logs_tail): handled directly here.
 /// - evaluate_js, dom_snapshot, page_snapshot, ui_invoke_action: routed to the
 ///   typed queues drained by the Dioxus-executor processor (`spawn_forever`
 ///   loop in the app's `ActionProcessor`), which delivers each response
 ///   exactly once via `BridgeState::set_response`.
+/// - dom_query, event_simulate, computed_styles, css_audit, navigate,
+///   component_tree, get_schema: routed through the shared bridge into typed
+///   queues (also drained on the Dioxus executor where the webview lives).
 pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
     loop {
         if state.is_shutdown() {
@@ -78,8 +82,26 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
             // page_snapshot: route to pending_page_snapshot_requests for Dioxus main thread
             if cmd.method == "page_snapshot" {
                 state.enqueue_page_snapshot_request(
-                    dioxus_shared::mcp::bridge::PageSnapshotRequest { id: cmd.id },
+                    dioxus_shared::mcp::bridge::PageSnapshotRequest { id: cmd.id.clone() },
                 );
+                continue;
+            }
+
+            // dom_query/event_simulate/computed_styles/css_audit and the
+            // schema-derived inspection methods (navigate/component_tree/
+            // get_schema): routed by the shared bridge into typed queues
+            // drained on the Dioxus executor where the webview lives.
+            if matches!(
+                cmd.method.as_str(),
+                "dom_query"
+                    | "event_simulate"
+                    | "computed_styles"
+                    | "css_audit"
+                    | "navigate"
+                    | "component_tree"
+                    | "get_schema"
+            ) {
+                handle_bridge_command(&state, &cmd);
                 continue;
             }
 
@@ -107,6 +129,18 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                             result: None,
                             error: Some(format!("app_info serialization: {e}")),
                         },
+                    }
+                }
+                "bridge_status" => {
+                    let bound_port = state.bound_port().unwrap_or(0);
+                    Response {
+                        result: Some(serde_json::json!({
+                            "bound_port": bound_port,
+                            "host": "127.0.0.1",
+                            "listening": state.is_listening(),
+                            "protocol_version": "2.0",
+                        })),
+                        error: None,
                     }
                 }
                 "initialize" => Response {
@@ -173,8 +207,56 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                         error: None,
                     }
                 }
+                "logs_tail" => {
+                    let lines = cmd
+                        .params
+                        .get("lines")
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(50) as usize;
+                    let filter = cmd
+                        .params
+                        .get("filter")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_lowercase());
+
+                    let buffer = state.get_logs();
+                    let formatted: Vec<String> = buffer
+                        .into_iter()
+                        .filter(|log| {
+                            filter
+                                .as_ref()
+                                .is_none_or(|f| log.to_lowercase().contains(f))
+                        })
+                        .rev()
+                        .take(lines)
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .rev()
+                        .collect();
+
+                    Response {
+                        result: Some(serde_json::json!({
+                            "lines": formatted,
+                            "count": formatted.len(),
+                            "source": "bridge",
+                        })),
+                        error: None,
+                    }
+                }
                 "screenshot" => {
-                    use image::ImageEncoder;
+                    let format = cmd
+                        .params
+                        .get("format")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("png")
+                        .to_lowercase();
+                    let quality = cmd
+                        .params
+                        .get("quality")
+                        .and_then(|v| v.as_u64())
+                        .map(|q| q as u32)
+                        .unwrap_or(90);
+
                     use xcap::Monitor;
                     match Monitor::all() {
                         Ok(monitors) if !monitors.is_empty() => {
@@ -183,30 +265,24 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                                 Ok(img) => {
                                     let width = img.width();
                                     let height = img.height();
-                                    let mut png_bytes = Vec::new();
-                                    {
-                                        let encoder =
-                                            image::codecs::png::PngEncoder::new(&mut png_bytes);
-                                        encoder
-                                            .write_image(
-                                                img.as_raw(),
-                                                width,
-                                                height,
-                                                image::ExtendedColorType::Rgba8,
-                                            )
-                                            .expect("PNG encoding failed");
-                                    }
-                                    Response {
-                                        result: Some(serde_json::json!({
-                                            "format": "png",
-                                            "width": width,
-                                            "height": height,
-                                            "data": base64::Engine::encode(
-                                                &base64::engine::general_purpose::STANDARD,
-                                                png_bytes
-                                            )
-                                        })),
-                                        error: None,
+                                    match encode_screenshot(&img, &format, quality) {
+                                        Ok(bytes) => Response {
+                                            result: Some(serde_json::json!({
+                                                "format": format,
+                                                "quality": quality,
+                                                "width": width,
+                                                "height": height,
+                                                "data": base64::Engine::encode(
+                                                    &base64::engine::general_purpose::STANDARD,
+                                                    bytes
+                                                )
+                                            })),
+                                            error: None,
+                                        },
+                                        Err(e) => Response {
+                                            result: None,
+                                            error: Some(e),
+                                        },
                                     }
                                 }
                                 Err(e) => Response {
@@ -282,6 +358,45 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
             state.set_response(cmd.id, response);
         }
         thread::sleep(std::time::Duration::from_millis(25));
+    }
+}
+
+/// Encode a captured screenshot honoring the requested `format`/`quality`.
+/// PNG is lossless (quality is recorded, not applied); JPEG honors
+/// `1..=100` quality. Any other format returns an explicit error string so
+/// the caller gets an actionable unsupported-format response.
+fn encode_screenshot(
+    img: &image::RgbaImage,
+    format: &str,
+    quality: u32,
+) -> Result<Vec<u8>, String> {
+    use image::ImageEncoder;
+    let width = img.width();
+    let height = img.height();
+    match format {
+        "png" => {
+            let mut bytes = Vec::new();
+            let encoder = image::codecs::png::PngEncoder::new(&mut bytes);
+            encoder
+                .write_image(img.as_raw(), width, height, image::ExtendedColorType::Rgba8)
+                .map_err(|e| format!("PNG encoding failed: {e}"))?;
+            Ok(bytes)
+        }
+        "jpg" | "jpeg" => {
+            let rgb = image::DynamicImage::ImageRgba8(img.clone()).to_rgb8();
+            let mut bytes = Vec::new();
+            let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(
+                &mut bytes,
+                quality.clamp(1, 100) as u8,
+            );
+            encoder
+                .write_image(rgb.as_raw(), width, height, image::ExtendedColorType::Rgb8)
+                .map_err(|e| format!("JPEG encoding failed: {e}"))?;
+            Ok(bytes)
+        }
+        other => Err(format!(
+            "unsupported screenshot format: {other} (supported: png, jpg, jpeg)"
+        )),
     }
 }
 
@@ -840,5 +955,146 @@ mod tests {
         );
         // The raw JS result string "2" becomes a JSON string "2" when wrapped in json!()
         assert_eq!(resp.result.unwrap(), serde_json::json!("2"));
+    }
+
+    // --- schema-derived / webview inspection routing ---
+
+    #[test]
+    fn bridge_consumer_loop_routes_inspection_methods_to_typed_queues() {
+        let state = Arc::new(BridgeState::new());
+        let cases = [
+            ("navigate", serde_json::json!({ "route": "/settings" })),
+            ("component_tree", serde_json::json!({})),
+            ("get_schema", serde_json::json!({})),
+            ("dom_query", serde_json::json!({ "selector": "#x" })),
+            (
+                "event_simulate",
+                serde_json::json!({ "event_type": "click", "selector": "#b" }),
+            ),
+            (
+                "computed_styles",
+                serde_json::json!({ "selector": "#x", "properties": ["color"] }),
+            ),
+            ("css_audit", serde_json::json!({ "selector": "#main" })),
+        ];
+        for (i, (method, params)) in cases.iter().enumerate() {
+            state.enqueue(Command {
+                id: format!("rt-{i}"),
+                method: method.to_string(),
+                params: params.clone(),
+                received_at: std::time::Instant::now(),
+            });
+        }
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(100));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        assert_eq!(state.dequeue_navigate_requests().len(), 1);
+        assert_eq!(state.dequeue_component_tree_requests().len(), 1);
+        assert_eq!(state.dequeue_schema_requests().len(), 1);
+        assert_eq!(state.dequeue_dom_query_requests().len(), 1);
+        assert_eq!(state.dequeue_event_simulate_requests().len(), 1);
+        assert_eq!(state.dequeue_computed_styles_requests().len(), 1);
+        assert_eq!(state.dequeue_css_audit_requests().len(), 1);
+        assert!(
+            state.get_response("rt-0").is_none(),
+            "inspection methods must be routed to queues, not answered directly"
+        );
+        assert_eq!(
+            state.dequeue_navigate_requests()[0].route,
+            "/settings"
+        );
+    }
+
+    // --- logs_tail ---
+
+    #[test]
+    fn bridge_consumer_loop_logs_tail_returns_bridge_entries() {
+        let state = Arc::new(BridgeState::new());
+        inject_app_identity(&state);
+        state.append_log("[INFO] bridge log line one".to_string());
+        state.append_log("[WARN] bridge log line two".to_string());
+        state.enqueue(Command {
+            id: "lt".to_string(),
+            method: "logs_tail".to_string(),
+            params: serde_json::json!({ "lines": 10 }),
+            received_at: std::time::Instant::now(),
+        });
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(50));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        let resp = state.get_response("lt").expect("no response for lt");
+        let result = resp.result.expect("expected result");
+        assert_eq!(
+            result.pointer("/source"),
+            Some(&serde_json::json!("bridge"))
+        );
+        let lines = result
+            .pointer("/lines")
+            .and_then(|v| v.as_array())
+            .expect("lines array");
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0].as_str(), Some("[INFO] bridge log line one"));
+    }
+
+    #[test]
+    fn bridge_consumer_loop_logs_tail_filters_by_substring() {
+        let state = Arc::new(BridgeState::new());
+        state.append_log("[INFO] translate done".to_string());
+        state.append_log("[INFO] theme toggled".to_string());
+        state.enqueue(Command {
+            id: "ltf".to_string(),
+            method: "logs_tail".to_string(),
+            params: serde_json::json!({ "filter": "theme" }),
+            received_at: std::time::Instant::now(),
+        });
+
+        let s = state.clone();
+        let handle = std::thread::spawn(move || bridge_consumer_loop(s));
+
+        std::thread::sleep(Duration::from_millis(50));
+
+        state.request_shutdown();
+        let _ = handle.join();
+
+        let resp = state.get_response("ltf").expect("no response for ltf");
+        let result = resp.result.expect("expected result");
+        let lines = result
+            .pointer("/lines")
+            .and_then(|v| v.as_array())
+            .expect("lines array");
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].as_str(), Some("[INFO] theme toggled"));
+    }
+
+    // --- screenshot format/quality ---
+
+    #[test]
+    fn encode_screenshot_honors_format_and_quality() {
+        use image::{Rgba, RgbaImage};
+        let mut img = RgbaImage::new(2, 2);
+        img.put_pixel(0, 0, Rgba([255u8, 0, 0, 255]));
+        img.put_pixel(1, 1, Rgba([0u8, 0, 255, 255]));
+
+        let png = encode_screenshot(&img, "png", 90).expect("png ok");
+        assert!(!png.is_empty());
+
+        let jpeg = encode_screenshot(&img, "jpeg", 80).expect("jpeg ok");
+        assert!(!jpeg.is_empty());
+
+        let err = encode_screenshot(&img, "bmp", 90).unwrap_err();
+        assert!(err.contains("unsupported screenshot format"), "got: {err}");
+        assert!(err.contains("bmp"), "error should name the format: {err}");
     }
 }
