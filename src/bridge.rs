@@ -1012,7 +1012,8 @@ mod tests {
         state.request_shutdown();
         let _ = handle.join();
 
-        assert_eq!(state.dequeue_navigate_requests().len(), 1);
+        let navigate_reqs = state.dequeue_navigate_requests();
+        assert_eq!(navigate_reqs.len(), 1);
         assert_eq!(state.dequeue_component_tree_requests().len(), 1);
         assert_eq!(state.dequeue_schema_requests().len(), 1);
         assert_eq!(state.dequeue_dom_query_requests().len(), 1);
@@ -1023,10 +1024,7 @@ mod tests {
             state.get_response("rt-0").is_none(),
             "inspection methods must be routed to queues, not answered directly"
         );
-        assert_eq!(
-            state.dequeue_navigate_requests()[0].route,
-            "/settings"
-        );
+        assert_eq!(navigate_reqs[0].route, "/settings");
     }
 
     // --- logs_tail ---

@@ -3,5 +3,4 @@ read_logs = true
 read_ui = true
 invoke_commands = true
 mutate_state = true
-close_app = true
 execute_tests = true
