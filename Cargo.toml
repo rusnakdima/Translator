@@ -8,6 +8,9 @@ description = "A Dioxus-based Translator Application with Schema-Driven UI"
 name = "translator"
 path = "src/main.rs"
 
+[build-dependencies]
+serde_json = "1"
+
 [dependencies]
 # Dioxus core
 dioxus = { version = "0.8.0-alpha.0", features = ["desktop", "html", "hooks", "signals", "macro", "lib", "router"] }
@@ -18,10 +21,7 @@ dioxus-html = "0.8.0-alpha.0"
 dioxus-router = "0.8.0-alpha.0"
 
 # Shared library - pure Rust business logic (schema-driven UI)
-dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui"] }
-
-# MCP Bridge for GUI inspection
-dioxus-plugin-mcp-bridge = { path = "../dioxus-plugin-mcp-bridge" }
+dioxus-shared = { path = "../dioxus-shared", features = ["dioxus-ui", "dioxus-desktop"] }
 
 # Translation engine
 trad = "0.1"
