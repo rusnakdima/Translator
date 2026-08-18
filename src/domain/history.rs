@@ -21,20 +21,20 @@ pub trait HistoryService {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn history_entry_serde_roundtrip() {
-    let entry = HistoryEntry {
-      id: "h-456".to_string(),
-      translation_id: "tx-789".to_string(),
-      query: "good morning".to_string(),
-      timestamp: Utc::now(),
-    };
-    let json = serde_json::to_string(&entry).expect("should serialize");
-    let roundtrip: HistoryEntry = serde_json::from_str(&json).expect("should deserialize");
-    assert_eq!(entry.id, roundtrip.id);
-    assert_eq!(entry.translation_id, roundtrip.translation_id);
-    assert_eq!(entry.query, roundtrip.query);
-  }
+    #[test]
+    fn history_entry_serde_roundtrip() {
+        let entry = HistoryEntry {
+            id: "h-456".to_string(),
+            translation_id: "tx-789".to_string(),
+            query: "good morning".to_string(),
+            timestamp: Utc::now(),
+        };
+        let json = serde_json::to_string(&entry).expect("should serialize");
+        let roundtrip: HistoryEntry = serde_json::from_str(&json).expect("should deserialize");
+        assert_eq!(entry.id, roundtrip.id);
+        assert_eq!(entry.translation_id, roundtrip.translation_id);
+        assert_eq!(entry.query, roundtrip.query);
+    }
 }

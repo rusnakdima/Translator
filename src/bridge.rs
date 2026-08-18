@@ -3,7 +3,7 @@
 //! These functions run on a dedicated thread polling the MCP command queue.
 //! Extracted from main.rs so they can be tested without the Dioxus binary.
 
-use dioxus_plugin_mcp_bridge::{BridgeState, Response};
+use dioxus_shared::mcp::bridge::{BridgeState, Response};
 use std::sync::Arc;
 use std::thread;
 
@@ -38,7 +38,7 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
             // eval commands: route to pending_eval_requests; bridge_consumer_loop
             // handles them by draining pending_js_results at top of next iteration
             if matches!(cmd.method.as_str(), "evaluate_js" | "dom_snapshot") {
-                state.enqueue_eval_request(dioxus_plugin_mcp_bridge::EvalRequest {
+                state.enqueue_eval_request(dioxus_shared::mcp::bridge::EvalRequest {
                     id: cmd.id,
                     method: cmd.method,
                     params: cmd.params,
@@ -100,7 +100,9 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                     let filtered: Vec<String> = all_logs
                         .into_iter()
                         .filter(|log| {
-                            filter.as_ref().map_or(true, |f| log.to_lowercase().contains(f))
+                            filter
+                                .as_ref()
+                                .is_none_or(|f| log.to_lowercase().contains(f))
                         })
                         .rev()
                         .take(lines)
@@ -129,14 +131,16 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                                     let height = img.height();
                                     let mut png_bytes = Vec::new();
                                     {
-                                        let encoder = image::codecs::png::PngEncoder::new(&mut png_bytes);
-                                        encoder.write_image(
-                                            img.as_raw(),
-                                            width,
-                                            height,
-                                            image::ExtendedColorType::Rgba8,
-                                        )
-                                        .expect("PNG encoding failed");
+                                        let encoder =
+                                            image::codecs::png::PngEncoder::new(&mut png_bytes);
+                                        encoder
+                                            .write_image(
+                                                img.as_raw(),
+                                                width,
+                                                height,
+                                                image::ExtendedColorType::Rgba8,
+                                            )
+                                            .expect("PNG encoding failed");
                                     }
                                     Response {
                                         result: Some(serde_json::json!({
@@ -216,7 +220,10 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
 /// Synchronous dispatch for bridge-invoked app commands. Returns JSON to send
 /// back to the MCP client. This is the MVP — full per-command registry is
 /// Phase 4 work per [`COMMAND_REGISTRY.md`](../DOCS/MIGRATION/COMMAND_REGISTRY.md).
-pub fn invoke_app_command(name: &str, payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+pub fn invoke_app_command(
+    name: &str,
+    payload: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     match name {
         "translator.languages.list" => {
             let langs = serde_json::json!([
@@ -235,8 +242,14 @@ pub fn invoke_app_command(name: &str, payload: &serde_json::Value) -> Result<ser
         }
         "translator.translate" => {
             let text = payload.get("text").and_then(|v| v.as_str()).unwrap_or("");
-            let source = payload.get("source_lang").and_then(|v| v.as_str()).unwrap_or("en");
-            let target = payload.get("target_lang").and_then(|v| v.as_str()).unwrap_or("es");
+            let source = payload
+                .get("source_lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("en");
+            let target = payload
+                .get("target_lang")
+                .and_then(|v| v.as_str())
+                .unwrap_or("es");
             if source == target {
                 return Ok(serde_json::json!({
                     "translated_text": text,
@@ -257,7 +270,10 @@ pub fn invoke_app_command(name: &str, payload: &serde_json::Value) -> Result<ser
 }
 
 /// Synchronous dispatch for UI actions invoked from MCP.
-pub fn invoke_ui_action(action: &str, _payload: &serde_json::Value) -> Result<serde_json::Value, String> {
+pub fn invoke_ui_action(
+    action: &str,
+    _payload: &serde_json::Value,
+) -> Result<serde_json::Value, String> {
     match action {
         "toggle_theme" | "add_term" | "save_settings" | "translate" | "swap_languages"
         | "show-shortcuts" | "close" | "clear_text" | "copy_result" => {
@@ -270,8 +286,8 @@ pub fn invoke_ui_action(action: &str, _payload: &serde_json::Value) -> Result<se
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dioxus_shared::mcp::bridge::Command;
     use std::time::Duration;
-    use dioxus_plugin_mcp_bridge::Command;
 
     #[test]
     fn bridge_consumer_loop_ping_returns_pong() {
@@ -292,7 +308,11 @@ mod tests {
         let _ = handle.join();
 
         let resp = state.get_response("1").expect("no response for id 1");
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         let result = resp.result.unwrap();
         assert_eq!(result.pointer("/pong"), Some(&serde_json::json!(true)));
     }
@@ -316,11 +336,21 @@ mod tests {
         let _ = handle.join();
 
         let resp = state.get_response("2").expect("no response for id 2");
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         let result = resp.result.unwrap();
-        assert_eq!(result.pointer("/name"), Some(&serde_json::json!("translator")));
+        assert_eq!(
+            result.pointer("/name"),
+            Some(&serde_json::json!("translator"))
+        );
         assert!(result.pointer("/version").is_some());
-        assert_eq!(result.pointer("/platform"), Some(&serde_json::json!("dioxus-desktop")));
+        assert_eq!(
+            result.pointer("/platform"),
+            Some(&serde_json::json!("dioxus-desktop"))
+        );
     }
 
     #[test]
@@ -366,8 +396,14 @@ mod tests {
             "target_lang": "en"
         });
         let result = invoke_app_command("translator.translate", &payload).expect("expected Ok");
-        assert_eq!(result.pointer("/translated_text"), Some(&serde_json::json!("hello")));
-        assert_eq!(result.pointer("/note"), Some(&serde_json::json!("same language; passthrough")));
+        assert_eq!(
+            result.pointer("/translated_text"),
+            Some(&serde_json::json!("hello"))
+        );
+        assert_eq!(
+            result.pointer("/note"),
+            Some(&serde_json::json!("same language; passthrough"))
+        );
     }
 
     #[test]
@@ -397,37 +433,58 @@ mod tests {
     fn invoke_ui_action_toggle_theme() {
         let result = invoke_ui_action("toggle_theme", &serde_json::json!({})).expect("expected Ok");
         assert_eq!(result.pointer("/ok"), Some(&serde_json::json!(true)));
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("toggle_theme")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("toggle_theme"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_add_term() {
         let result = invoke_ui_action("add_term", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("add_term")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("add_term"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_save_settings() {
-        let result = invoke_ui_action("save_settings", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("save_settings")));
+        let result =
+            invoke_ui_action("save_settings", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("save_settings"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_translate() {
         let result = invoke_ui_action("translate", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("translate")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("translate"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_swap_languages() {
-        let result = invoke_ui_action("swap_languages", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("swap_languages")));
+        let result =
+            invoke_ui_action("swap_languages", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("swap_languages"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_show_shortcuts() {
-        let result = invoke_ui_action("show-shortcuts", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("show-shortcuts")));
+        let result =
+            invoke_ui_action("show-shortcuts", &serde_json::json!({})).expect("expected Ok");
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("show-shortcuts"))
+        );
     }
 
     #[test]
@@ -439,13 +496,19 @@ mod tests {
     #[test]
     fn invoke_ui_action_clear_text() {
         let result = invoke_ui_action("clear_text", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("clear_text")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("clear_text"))
+        );
     }
 
     #[test]
     fn invoke_ui_action_copy_result() {
         let result = invoke_ui_action("copy_result", &serde_json::json!({})).expect("expected Ok");
-        assert_eq!(result.pointer("/action"), Some(&serde_json::json!("copy_result")));
+        assert_eq!(
+            result.pointer("/action"),
+            Some(&serde_json::json!("copy_result"))
+        );
     }
 
     #[test]
@@ -492,7 +555,10 @@ mod tests {
         assert_eq!(eval_requests.len(), 1, "expected 1 eval request enqueued");
         assert_eq!(eval_requests[0].id, cmd_id);
         assert_eq!(eval_requests[0].method, "evaluate_js");
-        assert_eq!(eval_requests[0].params.get("code"), Some(&serde_json::json!("1 + 1")));
+        assert_eq!(
+            eval_requests[0].params.get("code"),
+            Some(&serde_json::json!("1 + 1"))
+        );
     }
 
     #[test]
@@ -522,7 +588,10 @@ mod tests {
         assert_eq!(eval_requests.len(), 1);
         assert_eq!(eval_requests[0].id, cmd_id);
         assert_eq!(eval_requests[0].method, "dom_snapshot");
-        assert_eq!(eval_requests[0].params.get("selector"), Some(&serde_json::json!("#root")));
+        assert_eq!(
+            eval_requests[0].params.get("selector"),
+            Some(&serde_json::json!("#root"))
+        );
     }
 
     #[test]
@@ -555,7 +624,11 @@ mod tests {
         let resp = state.get_response(&cmd_id);
         assert!(resp.is_some(), "expected response for js result id");
         let resp = resp.unwrap();
-        assert!(resp.result.is_some(), "expected result, got error: {:?}", resp.error);
+        assert!(
+            resp.result.is_some(),
+            "expected result, got error: {:?}",
+            resp.error
+        );
         // The raw JS result string "2" becomes a JSON string "2" when wrapped in json!()
         assert_eq!(resp.result.unwrap(), serde_json::json!("2"));
     }

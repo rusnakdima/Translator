@@ -8,19 +8,22 @@ use dioxus_shared::{AppError, Response};
 pub struct TranslationService;
 
 impl TranslationService {
-  /// Get all supported languages.
-  pub fn get_supported_languages() -> Response<LanguagesResponse> {
-    let backend = get_translation_backend();
-    backend.read().unwrap().get_supported_languages()
-  }
+    /// Get all supported languages.
+    pub fn get_supported_languages() -> Response<LanguagesResponse> {
+        let backend = get_translation_backend();
+        backend.read().unwrap().get_supported_languages()
+    }
 
-  /// Translate text from source to target language.
-  pub fn translate(
-    text: &str,
-    source_lang: &str,
-    target_lang: &str,
-  ) -> Result<Response<TranslationResponse>, AppError> {
-    let backend = get_translation_backend();
-    backend.write().unwrap().translate(text, source_lang, target_lang)
-  }
+    /// Translate text from source to target language.
+    pub fn translate(
+        text: &str,
+        source_lang: &str,
+        target_lang: &str,
+    ) -> Result<Response<TranslationResponse>, AppError> {
+        let backend = get_translation_backend();
+        backend
+            .write()
+            .unwrap()
+            .translate(text, source_lang, target_lang)
+    }
 }

@@ -21,20 +21,20 @@ pub trait GlossaryService {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
+    use super::*;
 
-  #[test]
-  fn glossary_item_serde_roundtrip() {
-    let item = GlossaryItem {
-      id: "g-123".to_string(),
-      term: "keyboard".to_string(),
-      definition: "teclado".to_string(),
-      created_at: Utc::now(),
-    };
-    let json = serde_json::to_string(&item).expect("should serialize");
-    let roundtrip: GlossaryItem = serde_json::from_str(&json).expect("should deserialize");
-    assert_eq!(item.id, roundtrip.id);
-    assert_eq!(item.term, roundtrip.term);
-    assert_eq!(item.definition, roundtrip.definition);
-  }
+    #[test]
+    fn glossary_item_serde_roundtrip() {
+        let item = GlossaryItem {
+            id: "g-123".to_string(),
+            term: "keyboard".to_string(),
+            definition: "teclado".to_string(),
+            created_at: Utc::now(),
+        };
+        let json = serde_json::to_string(&item).expect("should serialize");
+        let roundtrip: GlossaryItem = serde_json::from_str(&json).expect("should deserialize");
+        assert_eq!(item.id, roundtrip.id);
+        assert_eq!(item.term, roundtrip.term);
+        assert_eq!(item.definition, roundtrip.definition);
+    }
 }
