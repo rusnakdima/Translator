@@ -296,7 +296,7 @@ fn App(props: AppProps) -> Element {
                 div {
                     class: "min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors",
                     DynamicPage {
-                        schema: props.schema.clone(),
+                        schema: props.schema.clone().into(),
                         initial_route: current_route,
                         bus: bus.clone()
                     }
