@@ -1,7 +1,19 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
-  "app_id": "translator",
   "version": "3.0.0",
+  "app": {
+    "id": "translator",
+    "name": "Translator",
+    "version": "3.0.0",
+    "description": "Schema-driven translation app",
+    "identifier": "com.translator.app",
+    "settings": {
+      "default_locale": "en",
+      "supported_locales": ["en", "ru", "es", "fr", "de", "zh", "ja", "ko"],
+      "theme": "light",
+      "color_mode": "system"
+    }
+  },
   "pages": [
     {
       "id": "translate-page",

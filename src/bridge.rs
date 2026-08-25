@@ -120,51 +120,10 @@ pub fn bridge_consumer_loop(state: Arc<BridgeState>) {
                     }
                 }
                 "screenshot" => {
-                    use image::ImageEncoder;
-                    use xcap::Monitor;
-                    match Monitor::all() {
-                        Ok(monitors) if !monitors.is_empty() => {
-                            let monitor = &monitors[0];
-                            match monitor.capture_image() {
-                                Ok(img) => {
-                                    let width = img.width();
-                                    let height = img.height();
-                                    let mut png_bytes = Vec::new();
-                                    {
-                                        let encoder =
-                                            image::codecs::png::PngEncoder::new(&mut png_bytes);
-                                        encoder
-                                            .write_image(
-                                                img.as_raw(),
-                                                width,
-                                                height,
-                                                image::ExtendedColorType::Rgba8,
-                                            )
-                                            .expect("PNG encoding failed");
-                                    }
-                                    Response {
-                                        result: Some(serde_json::json!({
-                                            "format": "png",
-                                            "width": width,
-                                            "height": height,
-                                            "data": base64::Engine::encode(
-                                                &base64::engine::general_purpose::STANDARD,
-                                                png_bytes
-                                            )
-                                        })),
-                                        error: None,
-                                    }
-                                }
-                                Err(e) => Response {
-                                    result: None,
-                                    error: Some(format!("capture failed: {e}")),
-                                },
-                            }
-                        }
-                        _ => Response {
-                            result: None,
-                            error: Some("no monitors available".to_string()),
-                        },
+                    // Screenshot feature disabled - xcap dependency removed due to libspa-sys build issues
+                    Response {
+                        result: None,
+                        error: Some("screenshot feature disabled".to_string()),
                     }
                 }
                 "commands_invoke" => {

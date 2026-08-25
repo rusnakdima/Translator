@@ -1,0 +1,57 @@
+@startuml spec-architecture
+title Translator — Target Architecture (reference exemplar for schema-driven apps)
+
+package "Presentation — schema-driven UI" {
+  [SchemaShell appId="translator"] 
+  [Pages: translate · settings · shortcuts\n(from UiSchema.pages)]
+  [ShortcutService + Toasts]
+}
+
+package "Schema document (UiSchema)" {
+  database "schemas table" as Schemas
+  note right of Schemas
+    {id, version, app, pages[],
+    layouts[], shortcuts[], handlers, stores}
+    get/save/get_all/delete commands
+  end note
+}
+
+package "Application / Bridge (Rust)" {
+  [TranslationService]
+  [RequestRegistry\nAtomicUsize ids]
+  [HistoryService]
+  [SettingsService]
+  [crud_execute surface]
+}
+
+package "Domain" {
+  [Language catalog (15)]
+  [Translation rules]
+  [UserSettings entity]
+  [TranslationHistoryEntry entity]
+}
+
+package "Infrastructure" {
+  [trad::Translator engine\nlazy RwLock singleton]
+  [nosql_orm JsonProvider\n{app_data_dir}/translator_db]
+}
+
+[SchemaShell appId="translator"] --> [Pages: translate · settings · shortcuts\n(from UiSchema.pages)]
+[Pages: translate · settings · shortcuts\n(from UiSchema.pages)] --> [TranslationService] : translate_text(text,\nsource,target) → request_id ack
+[TranslationService] --> [RequestRegistry\nAtomicUsize ids]
+[RequestRegistry\nAtomicUsize ids] --> [Pages: translate · settings · shortcuts\n(from UiSchema.pages)] : event "translation-result"\n{requestId,text,…,response}
+[TranslationService] --> [Translation rules]
+[Translation rules] --> [Language catalog (15)]
+[Translation rules] --> [trad::Translator engine\nlazy RwLock singleton]
+[HistoryService] --> [TranslationHistoryEntry entity]
+[SettingsService] --> [UserSettings entity]
+[TranslationHistoryEntry entity] --> [crud_execute surface]
+[UserSettings entity] --> [crud_execute surface]
+[crud_execute surface] --> [nosql_orm JsonProvider\n{app_data_dir}/translator_db]
+[Schemas] ..> [nosql_orm JsonProvider\n{app_data_dir}/translator_db]
+[SchemaShell appId="translator"] ..> [Schemas] : get_schema(id)
+
+note bottom of Domain
+  Pure logic; error strings and validation order are part of the contract (spec F-T-P0-1).
+end note
+@enduml

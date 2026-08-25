@@ -2,9 +2,8 @@
 //!
 //! Uses the `trad` crate for translation engine.
 
-use crate::domain::{Language, LanguagesResponse, TranslationResponse};
+use crate::domain::{Language, LanguagesResponse, TranslationResponse, TranslationService as DomainTranslationService};
 use dioxus_shared::{AppError, Response};
-use std::sync::RwLock;
 
 /// Translation backend using the `trad` crate
 pub struct TranslationBackend {
@@ -164,13 +163,19 @@ impl Default for TranslationBackend {
     }
 }
 
-/// Global translation backend with RwLock for interior mutability
-static TRANSLATION_BACKEND: std::sync::OnceLock<RwLock<TranslationBackend>> =
-    std::sync::OnceLock::new();
+impl DomainTranslationService for TranslationBackend {
+    fn get_supported_languages(&self) -> Response<LanguagesResponse> {
+        self.get_supported_languages()
+    }
 
-pub fn get_translation_backend() -> &'static RwLock<TranslationBackend> {
-    TRANSLATION_BACKEND
-        .get_or_init(|| RwLock::new(TranslationBackend::new().expect("Failed to init translator")))
+    fn translate(
+        &mut self,
+        text: &str,
+        source_lang: &str,
+        target_lang: &str,
+    ) -> Result<Response<TranslationResponse>, AppError> {
+        self.translate(text, source_lang, target_lang)
+    }
 }
 
 #[cfg(test)]

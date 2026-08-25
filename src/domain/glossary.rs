@@ -11,11 +11,12 @@ pub struct GlossaryItem {
     pub created_at: DateTime<Utc>,
 }
 
-pub trait GlossaryService {
-    fn add_item(&mut self, term: String, definition: String) -> GlossaryItem;
+/// Glossary service trait using interior mutability via SignalStore.
+pub trait GlossaryService: Send + Sync {
+    fn add_item(&self, term: String, definition: String) -> GlossaryItem;
     fn get_item(&self, id: &str) -> Option<GlossaryItem>;
     fn get_all_items(&self) -> Vec<GlossaryItem>;
-    fn delete_item(&mut self, id: &str) -> bool;
+    fn delete_item(&self, id: &str) -> bool;
     fn search(&self, query: &str) -> Vec<GlossaryItem>;
 }
 

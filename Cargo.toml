@@ -49,10 +49,6 @@ thiserror = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# Screen capture (for screenshot)
-xcap = "0.9"
-image = "0.25"
-
 # wry for webview access
 wry = "0.55"
 

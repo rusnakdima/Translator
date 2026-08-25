@@ -11,12 +11,13 @@ pub struct HistoryEntry {
     pub timestamp: DateTime<Utc>,
 }
 
-pub trait HistoryService {
-    fn add_entry(&mut self, translation_id: String, query: String) -> HistoryEntry;
+/// History service trait using interior mutability via SignalStore.
+pub trait HistoryService: Send + Sync {
+    fn add_entry(&self, translation_id: String, query: String) -> HistoryEntry;
     fn get_entry(&self, id: &str) -> Option<HistoryEntry>;
     fn get_all_entries(&self) -> Vec<HistoryEntry>;
-    fn clear_history(&mut self);
-    fn delete_entry(&mut self, id: &str) -> bool;
+    fn clear_history(&self);
+    fn delete_entry(&self, id: &str) -> bool;
 }
 
 #[cfg(test)]

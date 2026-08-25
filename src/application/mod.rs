@@ -1,5 +1,8 @@
 //! Application services layer
 
-pub mod translation_service;
+pub mod state;
 
-pub use translation_service::*;
+#[cfg(test)]
+mod tests;
+
+pub use state::AppState;

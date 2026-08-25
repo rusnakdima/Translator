@@ -1,6 +1,0 @@
-node_modules/
-dist/
-.angular/
-src-tauri/target/
-bun.lock
-package-lock.json

@@ -40,7 +40,7 @@ impl GlossaryStorage {
 }
 
 impl GlossaryService for GlossaryStorage {
-    fn add_item(&mut self, term: String, definition: String) -> GlossaryItem {
+    fn add_item(&self, term: String, definition: String) -> GlossaryItem {
         let item = GlossaryItem {
             id: Self::next_id(),
             term,
@@ -61,7 +61,7 @@ impl GlossaryService for GlossaryStorage {
         self.load_items()
     }
 
-    fn delete_item(&mut self, id: &str) -> bool {
+    fn delete_item(&self, id: &str) -> bool {
         let mut items = self.load_items();
         let before = items.len();
         items.retain(|i| i.id != id);

@@ -47,7 +47,7 @@ async fn main() {
     let mut timeout_count = 0;
 
     for r in &results {
-        print!("Test: {:30s} | ", r.test_name);
+        print!("Test: {:30} | ", r.test_name);
         if r.timed_out {
             println!("TIMEOUT ({}ms) ❌", r.elapsed_ms);
             timeout_count += 1;

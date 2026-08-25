@@ -37,7 +37,7 @@ pub struct Translation {
     pub created_at: DateTime<Utc>,
 }
 
-pub trait TranslationService {
+pub trait TranslationService: Send + Sync {
     fn get_supported_languages(&self) -> Response<LanguagesResponse>;
     fn translate(
         &mut self,

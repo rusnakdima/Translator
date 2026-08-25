@@ -37,7 +37,7 @@ impl HistoryStorage {
 }
 
 impl HistoryService for HistoryStorage {
-    fn add_entry(&mut self, translation_id: String, query: String) -> HistoryEntry {
+    fn add_entry(&self, translation_id: String, query: String) -> HistoryEntry {
         let entry = HistoryEntry {
             id: Self::next_id(),
             translation_id,
@@ -58,11 +58,11 @@ impl HistoryService for HistoryStorage {
         self.load_entries()
     }
 
-    fn clear_history(&mut self) {
+    fn clear_history(&self) {
         self.save_entries(&[]);
     }
 
-    fn delete_entry(&mut self, id: &str) -> bool {
+    fn delete_entry(&self, id: &str) -> bool {
         let mut entries = self.load_entries();
         let before = entries.len();
         entries.retain(|e| e.id != id);
